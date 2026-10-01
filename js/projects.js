@@ -43,6 +43,8 @@
                  "carrossel"   faixa horizontal arrastável
                  "final"       título centralizado + grid bento (6 imagens)
                  "reflexao"    fechamento tipográfico
+    estilo    -> (opcional) família de case com linguagem própria: "timeline" (Wilker), "expedicao" (NOMAD),
+                 "vigilia" (VIGIL). Cada família tem seus próprios layouts (tl-*, ex-*, vg-*) em project-page.js.
     simbolo   -> (opcional) o "d" do path do símbolo, exportado do Illustrator em prancheta 1080x1080.
                  Usado na transição do layout "fecho".
     logoVetor -> (opcional) nome do logo vetorizado em VETORES (fim deste arquivo), usado pelos layouts
@@ -457,6 +459,108 @@ const TODOS_PROJETOS = [
           "NOMAD is built for that."
         ],
         fecho: "Be ready for the unknown."
+      }
+    ]
+  },
+  {
+    id: "vigil",
+    titulo: "VIGIL",
+    categoria: "Branding",
+    ano: "",   // TROCAR: ano do projeto
+    resumo: "Predictive infrastructure intelligence.",
+    subtitulo: "Predictive infrastructure intelligence.",
+    // estilo "vigilia": a página já sabe o que vem. O esqueleto de cada bloco aparece antes, em contorno,
+    // e "confirma" ao chegar; divisórias em cone de confiança; cena final em canvas 2D ("The quiet before").
+    // Em aberto (não assumir): se é cliente real e que tipo de infraestrutura. Por isso o case é abstrato.
+    estilo: "vigilia",
+    info: [
+      { label: "Client", valor: "" },   // TROCAR
+      { label: "Role", valor: "" },     // TROCAR
+      { label: "Scope", valor: "" },    // TROCAR
+      { label: "Year", valor: "" }      // TROCAR
+    ],
+    imagem: "",
+    gradiente: ["#15191C", "#2F8F83"],
+    linkDemo: "",
+    // TROCAR: identidade provisória (papel, tinta e um único acento frio, que só aparece quando algo é detectado)
+    tema: { fundo: "#F3F1EA", texto: "#15191C", destaque: "#2F8F83" },
+    fontesCase: [ { googleFont: "Hanken+Grotesk:wght@300;400;500" } ],
+    secoes: [
+      {
+        layout: "vg-intro", nome: "Overview",
+        // TROCAR: rascunho. A 1ª frase vem da descrição do projeto; a 2ª, do conceito ("vigilância calma").
+        textos: [
+          "VIGIL is software that predicts infrastructure failures before they happen.",
+          "Its identity is built around a single idea: calm vigilance."
+        ]
+      },
+      {
+        layout: "vg-statement", nome: "Concept",
+        titulo: "Keep watch.",
+        // TROCAR: rascunho a partir da intenção "vigiar para que os outros possam descansar"
+        textos: [
+          "VIGIL keeps watch so that others can rest.",
+          "Its vigilance is calm: anticipation instead of alarm."
+        ],
+        midias: [ { legenda: "Concept — key visual", proporcao: "21/9" } ]
+      },
+      {
+        layout: "vg-name", nome: "The Name",
+        titulo: "Awake, so no one is caught off guard.",
+        // TROCAR: rascunho a partir da intenção "ficar acordado para que a falha não pegue ninguém de surpresa"
+        definicao: { palavra: "vigil", classe: "noun", texto: "a period of staying awake while others sleep, to keep watch." },
+        textos: [
+          "VIGIL stays awake so that a failure never takes anyone by surprise."
+        ]
+      },
+      {
+        // o símbolo é decisão do design, não da página: só espaços reservados
+        layout: "vg-symbol", nome: "The Symbol",
+        titulo: "",   // TROCAR: título da seção (opcional)
+        textos: [],   // TROCAR: texto sobre o símbolo
+        midias: [
+          { legenda: "Symbol — primary mark", proporcao: "1/1" },
+          { legenda: "Symbol — construction", proporcao: "1/1" },
+          { legenda: "Symbol — small sizes", proporcao: "1/1" }
+        ]
+      },
+      {
+        layout: "vg-identity", nome: "Visual Identity",
+        titulo: "Light, open, and quiet.",
+        // TROCAR: rascunho a partir da identidade provisória
+        textos: [
+          "A light, open palette of paper, ink and intermediate greys, with a single cold accent that only appears when something is detected.",
+          "The cone of confidence — narrow and sharp in the past, wide and faint in the future — is part of the identity, not just decoration."
+        ],
+        // TROCAR: nomes, HEX e proporções de uso (as proporções são ilustrativas)
+        cores: [
+          { nome: "Paper", hex: "#F3F1EA", uso: 58 },
+          { nome: "Mist", hex: "#D9D7CF", uso: 16 },
+          { nome: "Grey", hex: "#8B9095", uso: 12 },
+          { nome: "Ink", hex: "#15191C", uso: 12 },
+          { nome: "Signal", hex: "#2F8F83", uso: 2 }
+        ],
+        fontes: [
+          { papel: "Headlines", familia: "'Hanken Grotesk', sans-serif", nome: "Hanken Grotesk Light", exemplo: "Keep watch." },
+          // exemplo ilustrativo de dado (não é leitura real)
+          { papel: "Data", familia: "'IBM Plex Mono', monospace", nome: "IBM Plex Mono", exemplo: "S-04 · 0.982 · NOMINAL", mono: true }
+        ]
+      },
+      {
+        layout: "vg-applications", nome: "Applications",
+        titulo: "Screens, reports, stationery.",   // TROCAR: depende do tipo de infraestrutura
+        textos: [],   // TROCAR
+        midias: [
+          { legenda: "Screens — monitoring", proporcao: "16/10" },
+          { legenda: "Reports", proporcao: "4/5" },
+          { legenda: "Stationery", proporcao: "4/5" }
+        ]
+      },
+      {
+        // cena final: linhas de sensores (ilustrativas), um desvio previsto aos ~60% e a volta à calma
+        layout: "vg-final", nome: "The quiet before",
+        aviso: "A small drift. Seen early.",              // TROCAR: rascunho da frase calma
+        fecho: "Nothing happened. That's the point."      // TROCAR: rascunho
       }
     ]
   },

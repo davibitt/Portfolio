@@ -45,7 +45,7 @@ js/site-config.js   Dados de contato
 js/projects.js      TODOS OS PROJETOS (dados + textos dos cases). Documentado no topo. No fim: VETORES (gerado)
 js/layout.js        Header, rodapé, blocos de contato
 js/main.js          Cards, filtro, animação .reveal, vídeos, initPage() (e as funções __xxxCleanup)
-js/project-page.js  Monta os cases: editorial (Lynda), timeline (Wilker), expedição (NOMAD)
+js/project-page.js  Monta os cases: editorial (Lynda), timeline (Wilker), expedição (NOMAD), vigília (VIGIL)
 js/fluid.js         Fundo em fluido WebGL2. CONFIG no topo. Pausa com window.__fluidPaused = true
 assets/lynda/       Imagens da Lynda (otimizadas)
 assets/fonts/       Sylvena-Regular.woff2
@@ -59,12 +59,13 @@ tools/              Scripts que geraram vetores (ver seção 6). Não fazem part
 - **Qual renderização cada case usa** (`renderProjectPage` em `project-page.js`):
   - `estilo: "expedicao"` → `renderExpedition` (NOMAD)
   - `estilo: "timeline"` → família timeline (Wilker)
+  - `estilo: "vigilia"` → `renderVigil` (VIGIL)
   - tem `secoes` → case editorial com `CASE_LAYOUTS` (Lynda)
   - nada disso → layout simples
-- **Limpeza ao trocar de página:** cada família registra `window.__xxxCleanup` (`__tlCleanup`, `__lyCleanup`, `__exCleanup`), chamados em `initPage()` do `main.js`. Toda animação nova com listeners/rAF/WebGL **precisa** de cleanup.
+- **Limpeza ao trocar de página:** cada família registra `window.__xxxCleanup` (`__tlCleanup`, `__lyCleanup`, `__exCleanup`, `__vgCleanup`), chamados em `initPage()` do `main.js`. Toda animação nova com listeners/rAF/WebGL **precisa** de cleanup.
 - **Desempenho (não desfazer):**
   - `project-page.js` só é carregado em `project.html`.
-  - O fluido roda no máximo a ~60 fps (`FRAME_MS` em `fluid.js`) e pausa (`__fluidPaused`) quando um case de fundo opaco cobre a tela (`pauseFluidUnder` em `project-page.js`, usado por Lynda e Wilker; o NOMAD tem a própria lógica).
+  - O fluido roda no máximo a ~60 fps (`FRAME_MS` em `fluid.js`) e pausa (`__fluidPaused`) quando um case de fundo opaco cobre a tela (`pauseFluidUnder` em `project-page.js`, usado por Lynda, Wilker e VIGIL; o NOMAD tem a própria lógica).
   - No shader do mapa NOMAD, o terreno "difícil" só é calculado com `uSweep > -0.5` (antes disso ele é invisível).
   - Handlers de rolagem: fazer **todas as leituras** (`getBoundingClientRect`, `offsetHeight`) **antes das escritas** no DOM e não reescrever texto igual (ver `setH`/`setG`, `measure()`/`update()` no NOMAD).
   - Imagem de capa dos cases: `fetchpriority="high"`, sem `loading="lazy"` (parâmetro `eager` de `caseMedia`/`tlMedia`/`exMedia`).
@@ -124,6 +125,20 @@ Como funciona (tudo em `project-page.js`, bloco "CASE EXPEDIÇÃO"):
 
 **Pendente:** todas as imagens (espaços com legenda indicando o conteúdo); cores oficiais; ano; papel dele no projeto; códigos reais do Expedition System.
 
+### VIGIL — software de infraestrutura preditiva (família **vigília**, publicado, imagens pendentes)
+**Briefing do Davi:** "Predictive infrastructure intelligence." / "Software that predicts infrastructure failures before they happen". **Em aberto (não assumir):** se é cliente real e que tipo de infraestrutura. Por isso o case é **abstrato** (linhas, faixas, ruído; nada de servidores ou tubulações).
+**Conceito do case: "A vigília"** — vigilância calma; a página já sabe o que vem; o melhor resultado é nada acontecer. Sem alarme.
+**Identidade (provisória, TROCAR):** claro (papel `#F3F1EA`, tinta `#15191C`, cinzas `#D9D7CF`/`#8B9095` escolhidos por mim), um único acento frio `#2F8F83` que só aparece quando algo é detectado. Hanken Grotesk 300 (títulos) + IBM Plex Mono (dados). Sem serifas, sem laranja/dourado/vermelho.
+**Textos:** tudo é **rascunho meu** a partir das intenções do Davi (marcado TROCAR em `projects.js`): Overview, "Keep watch." (título dele), The Name (definição de "vigil" + frase), Visual Identity, "Screens, reports, stationery.", "A small drift. Seen early." e "Nothing happened. That's the point." (o fecho foi sugestão dele, também TROCAR). The Symbol e Applications só têm espaços reservados. Ficha técnica toda vazia (TROCAR).
+Como funciona (bloco "CASE VIGÍLIA" em `project-page.js`, CSS "CASE VIGÍLIA"):
+- **Fantasma do que vem** (assinatura): títulos e caixas de imagem têm `.vg-g`; ao entrar na faixa inferior da tela ficam em contorno a 7% e deslocados 24 px (`.is-predicted`); ao passar da linha dos 80% "confirmam" (`.is-confirmed`): sobem a opacidade, encaixam e se preenchem. Só CSS + 2 IntersectionObservers. Texto corrido não tem esqueleto (só entra depois).
+- **Cone de confiança:** divisória entre seções (`vgCone`, desenho em `vgConePaths`, SVG 1000×100): passado = sinal estreito e nítido; futuro = faixas 50/80/95% que se abrem com a rolagem. Espécime grande na Visual Identity (rótulos ilustrativos).
+- **Paleta:** barra de proporção de uso (o acento é uma fatia mínima); no celular vira barras horizontais. Proporções ilustrativas (TROCAR).
+- **Cena final "The quiet before"** (`vg-final`, 300vh, **canvas 2D**): 9 linhas de sensores (7 no celular) correm devagar; a rolagem avança o tempo; à direita do NOW viram previsão com cone. Aos ~56–80% a linha S-06 se desvia na previsão (único momento do acento), o cone dela se estreita, entra a frase calma, e o desvio se desfaz **antes** de chegar ao NOW. Depois o fecho e a palavra VIGIL. Rótulos e números são ilustrativos.
+- **Header claro** só nesse case: atributo `data-header-theme="light"` no `<html>` (posto em `setupVigil`, retirado no `__vgCleanup`).
+- `prefers-reduced-motion`: sem fantasma (tudo confirmado), cones abertos, cena final estática no estado de calma, com o fecho visível.
+**Pendente:** imagens (Concept, 3 do símbolo, 3 de aplicações), textos reais, ficha técnica, cores e fontes oficiais, ano.
+
 ---
 
 ## 4. Pendências gerais (dependem do Davi)
@@ -131,6 +146,7 @@ Como funciona (tudo em `project-page.js`, bloco "CASE EXPEDIÇÃO"):
 - Lynda: licença web da Sylvena; foto inédita para o `fecho`.
 - Wilker: imagens e vídeo.
 - NOMAD: imagens; cores e dados oficiais.
+- VIGIL: tudo marcado TROCAR (textos, ficha, cores, imagens); confirmar se é cliente real e o tipo de infraestrutura.
 - Deixados para depois, por decisão dele: og:image + favicon; espaço para depoimentos.
 
 ---

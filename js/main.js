@@ -105,6 +105,7 @@ function initPage(opts) {
   if (window.__tlCleanup) window.__tlCleanup(); // desliga a linha do tempo do case anterior (se houver)
   if (window.__lyCleanup) window.__lyCleanup(); // idem para as animações do logo (Lynda)
   if (window.__exCleanup) window.__exCleanup(); // idem para o mapa/rota do case "expedição" (NOMAD)
+  if (window.__vgCleanup) window.__vgCleanup(); // idem para o fantasma/cones/cena final do case "vigília" (VIGIL)
   if (document.querySelector("[data-project-container]")) renderProjectPage(opts.id);
   else document.documentElement.style.removeProperty("--header-bg");
   Layout.fillCTAs();
