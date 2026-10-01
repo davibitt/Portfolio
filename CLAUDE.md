@@ -62,6 +62,12 @@ tools/              Scripts que geraram vetores (ver seção 6). Não fazem part
   - tem `secoes` → case editorial com `CASE_LAYOUTS` (Lynda)
   - nada disso → layout simples
 - **Limpeza ao trocar de página:** cada família registra `window.__xxxCleanup` (`__tlCleanup`, `__lyCleanup`, `__exCleanup`), chamados em `initPage()` do `main.js`. Toda animação nova com listeners/rAF/WebGL **precisa** de cleanup.
+- **Desempenho (não desfazer):**
+  - `project-page.js` só é carregado em `project.html`.
+  - O fluido roda no máximo a ~60 fps (`FRAME_MS` em `fluid.js`) e pausa (`__fluidPaused`) quando um case de fundo opaco cobre a tela (`pauseFluidUnder` em `project-page.js`, usado por Lynda e Wilker; o NOMAD tem a própria lógica).
+  - No shader do mapa NOMAD, o terreno "difícil" só é calculado com `uSweep > -0.5` (antes disso ele é invisível).
+  - Handlers de rolagem: fazer **todas as leituras** (`getBoundingClientRect`, `offsetHeight`) **antes das escritas** no DOM e não reescrever texto igual (ver `setH`/`setG`, `measure()`/`update()` no NOMAD).
+  - Imagem de capa dos cases: `fetchpriority="high"`, sem `loading="lazy"` (parâmetro `eager` de `caseMedia`/`tlMedia`/`exMedia`).
 - **Grid da home/Work:** tamanhos automáticos (largo/estreito); último card ímpar ocupa a largura toda.
 - **Acentos em `projects.js`:** ao editar via script, normalizar com `unicodedata.normalize("NFC", ...)`.
 

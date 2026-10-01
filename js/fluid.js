@@ -446,9 +446,14 @@
 
     let last = performance.now();
     let frame = 0;
+    // no máximo ~60 quadros/s: em telas de 120/144 Hz o fluido custaria o dobro sem diferença visível
+    const FRAME_MS = 1000 / 60;
+    let next = 0;
     function loop(now) {
-      // pausa enquanto outra página cobre o fundo (ex: o mapa do case NOMAD)
+      // pausa enquanto outra página cobre o fundo (ex: o mapa do case NOMAD, o fundo dos cases)
       if (window.__fluidPaused) { last = now; requestAnimationFrame(loop); return; }
+      if (now < next - 2) { requestAnimationFrame(loop); return; }
+      next = now - next > FRAME_MS ? now + FRAME_MS : next + FRAME_MS;
       const dt = Math.min((now - last) / 1000, 1 / 60);
       last = now;
       const t = now / 1000;

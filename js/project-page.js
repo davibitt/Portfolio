@@ -113,7 +113,9 @@ function nextProjectHtml(index) {
    ========================================================= */
 
 // imagem real ou espaço reservado com a legenda do que vai ali
-function caseMedia(m, i, cls) {
+// eager = imagem do topo (capa): carrega já e com prioridade, em vez de "lazy"
+const imgLoad = (eager) => eager ? `fetchpriority="high"` : `loading="lazy"`;
+function caseMedia(m, i, cls, eager) {
   if (!m) return "";
   const ratio = m.proporcao || "4/3";
   const tone = m.tom || ["escuro", "claro", "destaque"][i % 3];
@@ -123,7 +125,7 @@ function caseMedia(m, i, cls) {
   }
   if (m.img) {
     const pos = m.posicao ? ` style="object-position:${m.posicao}"` : "";
-    return `<figure class="cm ${cls || ""}" style="aspect-ratio:${ratio}"><img src="${m.img}" alt="${m.legenda || ""}" loading="lazy"${pos}></figure>`;
+    return `<figure class="cm ${cls || ""}" style="aspect-ratio:${ratio}"><img src="${m.img}" alt="${m.legenda || ""}" ${imgLoad(eager)}${pos}></figure>`;
   }
   return `<figure class="cm is-ph tone-${tone} ${cls || ""}" style="aspect-ratio:${ratio}">
       <figcaption><span>visual</span>${m.legenda || ""}</figcaption>
@@ -303,7 +305,7 @@ function renderCase(p) {
         ${p.tagline ? `<p class="case-tagline">${p.tagline}</p>` : ""}
       </div>
     </header>
-    ${p.capa ? `<div class="bleed case-cover-bleed reveal">${caseMedia(p.capa, 2, "is-bleed")}</div>` : ""}`;
+    ${p.capa ? `<div class="bleed case-cover-bleed reveal">${caseMedia(p.capa, 2, "is-bleed", true)}</div>` : ""}`;
 
   const body = p.secoes.map((s) => {
     const fn = CASE_LAYOUTS[s.layout];
@@ -381,6 +383,23 @@ function setupSwatches(root) {
 const glowClamp = (v) => Math.min(1, Math.max(0, v));
 const glowEase = (t) => t * t * (3 - 2 * t);
 
+// case com fundo opaco cobrindo a tela inteira: o fluido do site não aparece, então pausa (economiza GPU).
+// Devolve a função de limpeza.
+function pauseFluidUnder(art) {
+  const check = () => {
+    const r = art.getBoundingClientRect();
+    window.__fluidPaused = r.top <= 0 && r.bottom >= window.innerHeight;
+  };
+  window.addEventListener("scroll", check, { passive: true });
+  window.addEventListener("resize", check);
+  check();
+  return () => {
+    window.removeEventListener("scroll", check);
+    window.removeEventListener("resize", check);
+    window.__fluidPaused = false;
+  };
+}
+
 
 /* =========================================================
    CASE "LINHA DO TEMPO" (projetos com estilo: "timeline")
@@ -398,12 +417,12 @@ const tlLabel = (s, i) => `<p class="tl-code reveal"><span>${tlCode(i)}</span>${
 const tlParas = (s) => (s.textos || []).map((t) => `<p>${t}</p>`).join("");
 
 // imagem, vídeo ou espaço reservado — sem caixa: só a imagem, legenda e marcas de visor
-function tlMedia(m, cls) {
+function tlMedia(m, cls, eager) {
   if (!m) return "";
   const pos = m.posicao ? ` style="object-position:${m.posicao}"` : "";
   let inner;
   if (m.video) inner = `<video src="${m.video}"${m.poster ? ` poster="${m.poster}"` : ""} muted loop playsinline preload="metadata" data-autoplay${pos}></video>`;
-  else if (m.img) inner = `<img src="${m.img}" alt="${m.legenda || ""}" loading="lazy"${pos}>`;
+  else if (m.img) inner = `<img src="${m.img}" alt="${m.legenda || ""}" ${imgLoad(eager)}${pos}>`;
   else inner = `<div class="tl-ph"><span>awaiting image</span></div>`;
   return `
     <figure class="tl-fig reveal ${cls || ""}"${m.velocidade ? ` data-speed="${m.velocidade}"` : ""}>
@@ -563,7 +582,7 @@ function renderTimeline(p) {
         <h1 class="tl-title reveal"><span>${first}</span>${rest.length ? `<span>${rest.join(" ")}</span>` : ""}</h1>
         ${p.subtitulo ? `<p class="tl-sub reveal">${p.subtitulo}</p>` : ""}
       </div>
-      ${p.capa ? tlMedia(p.capa, "tl-cover") : ""}
+      ${p.capa ? tlMedia(p.capa, "tl-cover", true) : ""}
     </header>`;
   const body = p.secoes.map((s, i) => {
     const fn = TL_LAYOUTS[s.layout];
@@ -639,12 +658,12 @@ function setupTimeline(root) {
     sc.width = sc.strip.scrollWidth;
     sc.metrics = sc.letters.map((l) => ({ left: l.offsetLeft, w: l.offsetWidth }));
   }
-  function updateScrub() {
+  // r e vw são lidos antes (em update), junto com as outras medidas, para não forçar o layout a cada escrita
+  function updateScrub(r, vw) {
     if (!sc) return;
     if (reduce) { sc.letters.forEach((l) => l.classList.add("is-rec")); sc.sub.forEach((x) => x.classList.add("on")); return; }
-    const r = sc.el.getBoundingClientRect();
     const p = Math.min(1, Math.max(0, -r.top / (r.height - window.innerHeight)));
-    const vw = sc.el.clientWidth, head = vw / 2;
+    const head = vw / 2;
     const start = head + vw * 0.04, end = head - sc.width - vw * 0.04;
     const x = start + (end - start) * Math.min(1, p / 0.88);
     sc.strip.style.transform = `translate3d(${x.toFixed(1)}px,0,0)`;
@@ -661,26 +680,36 @@ function setupTimeline(root) {
     const on = Math.floor(sc.sub.length * Math.min(1, Math.max(0, (p - 0.3) / 0.58)));
     sc.sub.forEach((x2, j) => x2.classList.toggle("on", j < on));
     sc.ruler.style.backgroundPositionX = `${x.toFixed(1)}px, ${x.toFixed(1)}px`;
-    sc.tc.textContent = fmtTC(Math.round(p * 24 * 12));
+    const tc = fmtTC(Math.round(p * 24 * 12));
+    if (sc.tcTxt !== tc) { sc.tcTxt = tc; sc.tc.textContent = tc; }
     const done = p >= 0.96;
     if (done && !sc.done) { sc.flash.classList.remove("go"); void sc.flash.offsetWidth; sc.flash.classList.add("go"); }
+    if (done !== sc.done || !sc.stateSet) {
+      sc.stateSet = true;
+      sc.state.classList.toggle("is-done", done);
+      sc.stateB.textContent = done ? "SAVED" : "REC";
+    }
     sc.done = done;
-    sc.state.classList.toggle("is-done", done);
-    sc.state.querySelector("b").textContent = done ? "SAVED" : "REC";
   }
+  if (sc) sc.stateB = sc.state.querySelector("b");
 
   const speedEls = [...art.querySelectorAll("[data-speed]")];
+  const speeds = speedEls.map((el) => parseFloat(el.dataset.speed));
   function update() {
+    // primeiro todas as leituras, depois todas as escritas (evita recalcular o layout várias vezes por quadro)
+    const ih = window.innerHeight;
     const top = art.getBoundingClientRect().top;
-    const frac = reduce ? 1 : Math.min(1, Math.max(0, (window.innerHeight * 0.72 - top - startY) / (endY - startY)));
+    const scR = sc && !reduce ? sc.el.getBoundingClientRect() : null;
+    const scW = scR ? sc.el.clientWidth : 0;
+    const offs = reduce ? null : speedEls.map((el, k) => {
+      const r = el.getBoundingClientRect();
+      return (r.top + r.height / 2 - ih / 2) * speeds[k];
+    });
+    const frac = reduce ? 1 : Math.min(1, Math.max(0, (ih * 0.72 - top - startY) / (endY - startY)));
     draw.style.strokeDashoffset = `${len * (1 - frac)}`;
     dot.classList.toggle("is-live", frac > 0.985);
-    updateScrub();
-    if (!reduce) speedEls.forEach((el) => {
-      const r = el.getBoundingClientRect();
-      const off = (r.top + r.height / 2 - window.innerHeight / 2) * parseFloat(el.dataset.speed);
-      el.style.translate = `0 ${off.toFixed(1)}px`;
-    });
+    updateScrub(scR, scW);
+    if (offs) speedEls.forEach((el, k) => { el.style.translate = `0 ${offs[k].toFixed(1)}px`; });
   }
 
   let ticking = false;
@@ -701,10 +730,12 @@ function setupTimeline(root) {
 
   build();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measureScrub(); update(); });
+  const unpauseFluid = pauseFluidUnder(art);
   window.__tlCleanup = () => {
     window.removeEventListener("scroll", onScroll);
     ro.disconnect();
     if (timer) clearInterval(timer);
+    unpauseFluid();
     window.__tlCleanup = null;
   };
 }
@@ -733,13 +764,13 @@ const exParas = (s, from) => (s.textos || []).slice(from || 0).map((t) => `<p>${
 
 // imagem, vídeo ou espaço reservado, em moldura técnica com marcas de registro e código
 let exImgCount = 0;
-function exMedia(m, cls) {
+function exMedia(m, cls, eager) {
   if (!m) return "";
   exImgCount++;
   const pos = m.posicao ? ` style="object-position:${m.posicao}"` : "";
   let inner;
   if (m.video) inner = `<video src="${m.video}"${m.poster ? ` poster="${m.poster}"` : ""} muted loop playsinline preload="metadata" data-autoplay${pos}></video>`;
-  else if (m.img) inner = `<img src="${m.img}" alt="${m.legenda || ""}" loading="lazy"${pos}>`;
+  else if (m.img) inner = `<img src="${m.img}" alt="${m.legenda || ""}" ${imgLoad(eager)}${pos}>`;
   else inner = `<div class="ex-ph"><span>awaiting image</span></div>`;
   // folha de carta topográfica: cabeçalho (folha + coordenada), margem graduada, rodapé (legenda + escala)
   return `
@@ -956,7 +987,7 @@ function renderExpedition(p) {
           ${p.subtitulo ? `<p class="ex-sub">${p.subtitulo}</p>` : ""}
         </div>
       </div>
-      ${p.capa ? `<div class="wrap">${exMedia(p.capa, "ex-cover")}</div>` : ""}
+      ${p.capa ? `<div class="wrap">${exMedia(p.capa, "ex-cover", true)}</div>` : ""}
     </header>`;
   const body = p.secoes.map((s, i) => {
     const fn = EX_LAYOUTS[s.layout];
@@ -1018,19 +1049,24 @@ void main(){
   float mj0; float h0 = fbm(q);
   float l0 = contour(h0 * 16.0, mj0);
 
-  // terreno "mais difícil": acidentado e instável (se deforma devagar com o tempo)
-  vec2 wv = vec2(fbm(q * 1.3 + uTime * 0.035), fbm(q * 1.3 + 7.1 - uTime * 0.03));
-  float h1 = 0.5 * fbm(q) + 0.8 * ridged(q * 1.6 + wv * 0.9);
-  float mj1; float l1 = contour(h1 * 17.0, mj1);
+  // terreno "mais difícil" (acidentado e instável, se deforma devagar com o tempo): só é calculado
+  // quando a varredura da cena final já começou. Antes disso m = 0 e ele não aparece; pular o cálculo
+  // poupa ~4/5 do custo do shader durante a rolagem. (uSweep é uniform: o "if" é igual em todos os pixels.)
+  float m = 0.0, mj1 = 0.0, l1 = 0.0, shade = 0.0, peak = 0.0;
+  if (uSweep > -0.5) {
+    vec2 wv = vec2(fbm(q * 1.3 + uTime * 0.035), fbm(q * 1.3 + 7.1 - uTime * 0.03));
+    float h1 = 0.5 * h0 + 0.8 * ridged(q * 1.6 + wv * 0.9);
+    l1 = contour(h1 * 17.0, mj1);
 
-  // a varredura desce pela tela; acima dela o levantamento já é o novo
-  float m = 1.0 - smoothstep(uSweep - 0.035, uSweep, sy);
+    // a varredura desce pela tela; acima dela o levantamento já é o novo
+    m = 1.0 - smoothstep(uSweep - 0.035, uSweep, sy);
 
-  // sombreamento de relevo do terreno novo (volume) e picos em laranja
-  vec3 nrm = normalize(vec3(-dFdx(h1) * 320.0 * uDpr, -dFdy(h1) * 320.0 * uDpr, 1.0));
-  vec3 L = normalize(vec3(-0.6, 0.55, 0.55));
-  float shade = dot(nrm, L) - L.z;
-  float peak = smoothstep(0.86, 1.02, h1);
+    // sombreamento de relevo do terreno novo (volume) e picos em laranja
+    vec3 nrm = normalize(vec3(-dFdx(h1) * 320.0 * uDpr, -dFdy(h1) * 320.0 * uDpr, 1.0));
+    vec3 L = normalize(vec3(-0.6, 0.55, 0.55));
+    shade = dot(nrm, L) - L.z;
+    peak = smoothstep(0.86, 1.02, h1);
+  }
 
   vec3 col = uBg * (1.0 + shade * 0.55 * m);
   float line = mix(l0 * (0.11 + 0.1 * mj0), l1 * (0.12 + 0.13 * mj1), m);
@@ -1126,7 +1162,10 @@ function setupExpedition(root) {
 
   const svg = art.querySelector(".ex-route"), path = svg.querySelector(".ex-route-path"), wpsG = svg.querySelector(".ex-route-wps");
   const hud = art.querySelector(".ex-hud");
-  const H = (k) => hud.querySelector(`[data-h="${k}"]`);
+  // HUD: elementos guardados e texto só reescrito quando muda
+  const hEls = {}, hLast = {};
+  const H = (k) => hEls[k] || (hEls[k] = hud.querySelector(`[data-h="${k}"]`));
+  const setH = (k, v) => { if (hLast[k] === v) return; hLast[k] = v; H(k).textContent = v; };
   const secs = [...art.querySelectorAll(".ex-sec, .ex-flare")];
   // o HUD mostra o mesmo número e nome do rótulo de cada seção
   const labels = secs.map((s) => `${(s.querySelector(".ex-wp-id") || {}).textContent || ""} / ${((s.querySelector(".ex-wp-name") || {}).textContent || "").toUpperCase()}`);
@@ -1136,10 +1175,10 @@ function setupExpedition(root) {
   // rota: pontos em coordenadas do artigo
   let pts = [], d = "", len = 0, wpCount = 0, restTimer = 0, client = null, idleSince = performance.now();
   const PX_PER_KM = 420; // escala decorativa
-  let broke = false;
+  let broke = false, artW = 0, artH = 0;
   function addPoint(x, y, jump) {
     // só dentro do artigo: a rota não invade o bloco de contato nem o que vem depois
-    if (y < 0 || y > art.offsetHeight - 6) { broke = true; return; }
+    if (y < 0 || y > artH - 6) { broke = true; return; }
     if (broke) { jump = true; broke = false; }
     const l = pts[pts.length - 1];
     if (l && !jump) {
@@ -1163,9 +1202,11 @@ function setupExpedition(root) {
     if (wpsG.childNodes.length > 24) wpsG.removeChild(wpsG.firstChild);
   }
 
+  // tamanho do artigo guardado (atualizado no resize e pelo ResizeObserver): evita ler o layout a cada ponto da rota
   function sizeSvg() {
-    svg.setAttribute("viewBox", `0 0 ${art.clientWidth} ${art.offsetHeight}`);
-    svg.style.height = art.offsetHeight + "px";
+    artW = art.clientWidth; artH = art.offsetHeight;
+    svg.setAttribute("viewBox", `0 0 ${artW} ${artH}`);
+    svg.style.height = artH + "px";
   }
   sizeSvg();
 
@@ -1219,23 +1260,28 @@ function setupExpedition(root) {
     const v = trail ? 55 * (1 + Math.min(2, lag) * 14)                    // px/s; no toque, acelera conforme o atraso
                     : 48 * (1 + Math.min(24, (far / ih) * 16));           // no desktop, só quando sai da tela
     walker.x = Math.min(w - 8, Math.max(8, walker.x + Math.cos(walker.a) * v * dt));
-    walker.y = Math.min(art.offsetHeight - 40, Math.max(0, walker.y + Math.sin(walker.a) * v * dt));
+    walker.y = Math.min(artH - 40, Math.max(0, walker.y + Math.sin(walker.a) * v * dt));
     addPoint(walker.x, walker.y);
   }
 
   // HUD: posição atual (cursor ou centro da tela) -> coordenada/altitude decorativas
   function updateHud(x, y) {
     const lat = EX_BASE.lat + y * 0.000052, lon = EX_BASE.lon + x * 0.00009;
-    H("coord").textContent = exCoordStr(lat, lon);
+    setH("coord", exCoordStr(lat, lon));
     const alt = 420 + 380 * Math.sin(x * 0.004 + y * 0.0011) + 260 * Math.sin(y * 0.0023 - x * 0.002) + y * 0.05;
-    H("alt").textContent = Math.max(0, Math.round(alt)).toLocaleString("en-US");
-    H("dist").textContent = (len / PX_PER_KM).toFixed(2);
+    setH("alt", Math.max(0, Math.round(alt)).toLocaleString("en-US"));
+    setH("dist", (len / PX_PER_KM).toFixed(2));
   }
 
   let ticking = false, lastScroll = null, lastSweep = null, lastFlare = null, liveFrame = 0;
   function frame() {
     ticking = false;
+    // primeiro todas as leituras de posição, depois as escritas (evita recalcular o layout várias vezes por quadro)
     const ih = window.innerHeight, r = art.getBoundingClientRect();
+    let cur = -1;
+    secs.forEach((el, k) => { if (el.getBoundingClientRect().top <= ih * 0.5) cur = k; });
+    if (fin) fin.measure();
+    if (flare) flare.measure();
     // o mapa e o HUD só aparecem sobre o artigo; o fluido do site pausa enquanto o mapa cobre a tela
     const cut = Math.max(0, ih - r.bottom);
     canvas.style.clipPath = cut ? `inset(0 0 ${cut}px 0)` : "";
@@ -1256,11 +1302,9 @@ function setupExpedition(root) {
     else if (client) {
       addPoint(client.x - r.left, client.y - r.top);
       updateHud(client.x - r.left, client.y - r.top);
-    } else updateHud(art.clientWidth / 2, -r.top + ih / 2);
+    } else updateHud(artW / 2, -r.top + ih / 2);
 
-    let cur = -1;
-    secs.forEach((el, k) => { if (el.getBoundingClientRect().top <= ih * 0.5) cur = k; });
-    H("wp").textContent = cur < 0 ? "WP-00 / BASE" : labels[cur];
+    setH("wp", cur < 0 ? "WP-00 / BASE" : labels[cur]);
   }
   const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(frame); } };
   const onMove = (e) => {
@@ -1312,12 +1356,14 @@ function setupExFlare(sec, reduce, hasMap) {
   const bg = sec.querySelector(".ex-flare-bg"), beacon = sec.querySelector(".ex-flare-beacon");
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / (b - a)));
-  let cov = false;
+  let cov = false, r = null, sr = null;
   return {
     covering: () => cov,
+    // leituras separadas das escritas: frame() mede tudo antes de mexer no DOM
+    measure() { r = sec.getBoundingClientRect(); sr = sticky.getBoundingClientRect(); },
     update() {
-      const r = sec.getBoundingClientRect(), ih = window.innerHeight, w = window.innerWidth;
-      const sr = sticky.getBoundingClientRect();
+      if (!r) this.measure();
+      const ih = window.innerHeight, w = window.innerWidth;
       if (r.bottom < 0 || r.top > ih) { cov = false; return null; }
       const p = Math.min(1, Math.max(0, -r.top / (r.height - ih)));
       const fx = w * (w < 720 ? 0.5 : 0.72), fy = ih * 0.36;               // ponto do sinalizador, na tela fixa
@@ -1351,12 +1397,18 @@ function setupExFinal(sec, reduce) {
   // A do terreno (3ª) ganha mais tempo: é quando a varredura refaz o mapa.
   const BASE = [0, 0.12, 0.26, 0.6, 0.8];
   const starts = lines.map((_, k) => n === BASE.length ? BASE[k] : k * (0.8 / Math.max(1, n - 1)));
-  let visible = false;
+  let visible = false, r = null;
   const STATUS = ["STABLE", "REROUTING", "CHANGING", "SEVERE", "OUT OF RANGE", "READY"];
+  // escreve só quando o valor muda (fora da tela os valores ficam parados e nada é reescrito)
+  const gEls = {}, last = {};
+  const setG = (k, v) => { v = String(v); if (last[k] === v) return; last[k] = v; (gEls[k] || (gEls[k] = G(k))).textContent = v; };
+  const setOnce = (k, v, fn) => { if (last[k] === v) return; last[k] = v; fn(v); };
   return {
     active: () => visible,
+    measure() { r = sec.getBoundingClientRect(); },
     update() {
-      const r = sec.getBoundingClientRect(), ih = window.innerHeight;
+      if (!r) this.measure();
+      const ih = window.innerHeight;
       visible = r.top < ih && r.bottom > 0;
       const p = reduce ? 1 : Math.min(1, Math.max(0, -r.top / (r.height - ih)));
       let cur = -1;
@@ -1369,21 +1421,23 @@ function setupExFinal(sec, reduce) {
       const done = n && p >= starts[n - 1];
       const t = performance.now() / 1000;
       const jitter = (a) => (reduce || done ? 0 : Math.sin(t * 7.3 + a) * cond * 2.2);
-      G("wind").textContent = Math.round(lerp(12, 46, cond) + jitter(1));
-      G("temp").textContent = Math.round(lerp(14, -7, cond));
-      G("vis").textContent = lerp(10, 0.4, cond).toFixed(1);
-      G("grade").textContent = Math.round(lerp(6, 38, terr));
-      G("dist").textContent = lerp(2.4, 18.7, far).toFixed(1);
-      G("status").textContent = done ? STATUS[5]
+      setG("wind", Math.round(lerp(12, 46, cond) + jitter(1)));
+      setG("temp", Math.round(lerp(14, -7, cond)));
+      setG("vis", lerp(10, 0.4, cond).toFixed(1));
+      setG("grade", Math.round(lerp(6, 38, terr)));
+      setG("dist", lerp(2.4, 18.7, far).toFixed(1));
+      setG("status", done ? STATUS[5]
         : cur === 2 ? (sweepP > 0 && sweepP < 1 ? "RESURVEYING" : sweepP >= 1 ? "UNSTABLE TERRAIN" : STATUS[3])
-        : STATUS[Math.min(4, cur + 1)];
+        : STATUS[Math.min(4, cur + 1)]);
       sec.classList.toggle("is-alert", cur >= 1 && !done);
       sec.classList.toggle("is-done", !!done);
       // mini mapa: a rota real se desvia da planejada; o destino se afasta
-      route.style.strokeDashoffset = (1 - seg(p, starts[0] || 0, (starts[0] || 0) + 0.2) * (0.62 + 0.38 * far)).toFixed(3);
+      setOnce("route", (1 - seg(p, starts[0] || 0, (starts[0] || 0) + 0.2) * (0.62 + 0.38 * far)).toFixed(3), (v) => { route.style.strokeDashoffset = v; });
       const dx = lerp(300, 372, far), dy = lerp(92, 30, far);
-      dest.setAttribute("transform", `translate(${dx} ${dy})`);
-      plan.setAttribute("d", `M40 204 L${dx} ${dy}`);
+      setOnce("dest", `${dx} ${dy}`, () => {
+        dest.setAttribute("transform", `translate(${dx} ${dy})`);
+        plan.setAttribute("d", `M40 204 L${dx} ${dy}`);
+      });
       // posição da varredura na tela (de -0.05 a 1.06); depois dela o terreno novo fica "vivo"
       return { sweep: sweepP <= 0 ? -1 : sweepP >= 1 ? 2 : -0.05 + sweepP * 1.11, live: visible && sweepP >= 1 };
     }
@@ -1445,6 +1499,7 @@ function setupLynda(root) {
   art.querySelectorAll("[data-ly-build]").forEach((el) => offs.push(lyBuild(el, reduce)));
   const proj = PROJECTS.find((x) => art.dataset.id === x.id);
   art.querySelectorAll("[data-ly-close]").forEach((el) => offs.push(lyClose(el, proj, reduce)));
+  offs.push(pauseFluidUnder(art));
   window.__lyCleanup = () => { offs.forEach((f) => f && f()); window.__lyCleanup = null; };
 }
 
