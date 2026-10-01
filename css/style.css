@@ -1439,3 +1439,186 @@ a.service-row { color: inherit; }
   .ly-stage-ui { left: 14px; right: 14px; bottom: 10px; }
   .ly-replay { padding: 4px 10px; font-size: 0.64rem; }
 }
+
+/* =========================================================
+   CASE "VIGÍLIA" (estilo: "vigilia", ex: VIGIL)
+   Claro e arejado (papel + tinta + cinzas), um único acento frio que só aparece quando algo é detectado.
+   Movimento lento, sem bounce. Cores provisórias (TROCAR) vêm do "tema" em projects.js.
+   ========================================================= */
+/* header claro enquanto o case está na tela (o atributo é posto/retirado por setupVigil) */
+html[data-header-theme="light"] .site-header {
+  --text: #15191c; --text-muted: #5d6368; --border: rgba(21, 25, 28, 0.12);
+  --bg: #f3f1ea; --bg-raised: #ebe8df;
+  color: var(--text);
+  background: linear-gradient(to bottom, rgba(243, 241, 234, 0.92), rgba(243, 241, 234, 0));
+}
+html[data-header-theme="light"] .site-header.scrolled { background: var(--header-bg, rgba(243, 241, 234, 0.92)); }
+html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
+
+.vg-case {
+  --v-paper: #f3f1ea; --v-ink: #15191c; --v-accent: #2f8f83;
+  --v-soft: color-mix(in srgb, var(--v-ink) 66%, transparent);
+  --v-dim: color-mix(in srgb, var(--v-ink) 42%, transparent);
+  --v-line: color-mix(in srgb, var(--v-ink) 14%, transparent);
+  --v-sans: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --vg-ease: cubic-bezier(0.33, 0, 0.15, 1);   /* suave, sem bounce */
+  position: relative; overflow-x: clip;
+  background: var(--v-paper); color: var(--v-ink); font-family: var(--v-sans);
+}
+.vg-case .back-link { color: var(--v-soft); }
+.vg-case .back-link:hover { color: var(--v-ink); }
+.vg-sec { position: relative; padding: clamp(72px, 10vw, 150px) 0; }
+.vg-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); }
+
+/* rótulo de seção: número / total + nome, em mono */
+.vg-label {
+  display: flex; align-items: baseline; gap: 16px; margin: 0 0 clamp(28px, 4vw, 48px);
+  font: 500 0.74rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-soft);
+}
+.vg-label span { color: var(--v-dim); }
+
+/* títulos leves (peso 300) e grandes */
+.vg-h2, .vg-display, .vg-lead, .vg-word {
+  font-family: var(--v-sans); font-weight: 300; letter-spacing: -0.035em; line-height: 1.02; margin: 0; color: var(--v-ink);
+}
+.vg-h2 { font-size: clamp(2.3rem, 5.4vw, 5rem); max-width: 16ch; }
+.vg-display { font-size: clamp(3.6rem, 12vw, 11.5rem); letter-spacing: -0.05em; line-height: 0.95; }
+.vg-lead { font-size: clamp(1.7rem, 3.4vw, 3rem); line-height: 1.15; letter-spacing: -0.025em; max-width: 22ch; }
+.vg-text { margin-top: clamp(24px, 3vw, 40px); max-width: 52ch; color: var(--v-soft); font-size: 1.05rem; line-height: 1.7; }
+.vg-text p { margin: 0 0 1em; }
+.vg-text p:last-child { margin-bottom: 0; }
+.vg-indent { margin-left: auto; margin-right: 8%; }
+
+/* ---------- hero ---------- */
+.vg-hero { padding: clamp(130px, 18vh, 200px) 0 clamp(40px, 6vw, 80px); }
+.vg-kicker { margin: 0 0 clamp(16px, 2vw, 28px); font: 500 0.74rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-soft); }
+.vg-title {
+  margin: 0 0 0 -0.04em; font-family: var(--v-sans); font-weight: 300;
+  font-size: clamp(5.5rem, 25vw, 24rem); line-height: 0.84; letter-spacing: -0.02em;
+}
+.vg-sub { margin: clamp(18px, 2.4vw, 32px) 0 0; font-size: clamp(1.1rem, 2vw, 1.6rem); font-weight: 300; color: var(--v-soft); letter-spacing: -0.01em; }
+.js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub { animation: vg-in 1.8s var(--vg-ease) both; }
+.js .vg-title { animation-name: vg-title-in; animation-duration: 2.4s; animation-delay: 0.15s; }
+.js .vg-sub { animation-delay: 0.7s; }
+@keyframes vg-in { from { opacity: 0; transform: translateY(16px); } }
+@keyframes vg-title-in { from { opacity: 0; letter-spacing: 0.04em; } }
+
+/* ---------- 1. fantasma do que vem ----------
+   antes de entrar: invisível; na faixa inferior: contorno a ~7%, deslocado 24 px;
+   ao confirmar: sobe a opacidade, encaixa no lugar e (nos títulos) se preenche */
+.js .vg-g { opacity: 0; transform: translateY(24px); transition: opacity 1.1s var(--vg-ease), transform 1.5s var(--vg-ease); }
+.js .vg-g.is-predicted { opacity: 0.07; }
+.js .vg-g.is-confirmed { opacity: 1; transform: none; }
+.js .vg-g-title {
+  color: transparent; -webkit-text-stroke: 1px var(--v-ink);
+  transition: opacity 1.1s var(--vg-ease), transform 1.5s var(--vg-ease), color 1s var(--vg-ease) 0.6s, -webkit-text-stroke-color 1s var(--vg-ease) 0.6s;
+}
+.js .vg-g-title.is-confirmed { color: var(--v-ink); -webkit-text-stroke-color: transparent; }
+/* texto corrido não tem esqueleto: só entra depois de confirmado */
+.js .vg-g-text.is-predicted:not(.is-confirmed) { opacity: 0; }
+.js .vg-g-text.is-confirmed { transition-delay: 0.35s; }
+/* caixas: a moldura aparece primeiro (tinta cheia), o conteúdo e o tom final vêm depois */
+.js .vg-g-box .vg-frame > *, .js .vg-g-box > :not(.vg-frame) { transition: opacity 1s var(--vg-ease) 0.6s; }
+.js .vg-g-box:not(.is-confirmed) .vg-frame > *, .js .vg-g-box:not(.is-confirmed) > :not(.vg-frame) { opacity: 0; }
+
+/* ---------- imagens / espaços reservados ---------- */
+.vg-fig { margin: 0; }
+.vg-frame { position: relative; overflow: hidden; border: 1px solid var(--v-ink); transition: border-color 1.2s var(--vg-ease) 0.6s; }
+.vg-g-box.is-confirmed .vg-frame, html:not(.js) .vg-frame { border-color: var(--v-line); }
+.vg-frame img, .vg-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vg-ph {
+  position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; padding: 14px 16px;
+  font: 500 0.66rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim);
+}
+.vg-fig figcaption { margin-top: 10px; font: 500 0.68rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-dim); }
+.vg-wide { margin-top: clamp(48px, 6vw, 90px); }
+
+/* ---------- 2. cone de confiança (divisórias) ---------- */
+.vg-cone { position: relative; height: clamp(64px, 8vw, 110px); margin: 0 var(--gutter); max-width: calc(var(--container) - 2 * var(--gutter)); color: var(--v-ink); }
+@media (min-width: 1321px) { .vg-cone { margin: 0 auto; } }
+.vg-cone svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.vg-band { fill: url(#vg-fade); }
+.vg-band.b3 { opacity: 0.045; } .vg-band.b2 { opacity: 0.06; } .vg-band.b1 { opacity: 0.09; }
+.vg-past { fill: none; stroke: var(--v-ink); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.7; }
+.vg-mean { fill: none; stroke: var(--v-ink); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 2 5; opacity: 0.3; }
+/* espécime (Visual Identity) */
+.vg-cone-spec { margin-top: clamp(64px, 8vw, 120px); }
+.vg-cone-lg { margin: 0; max-width: none; height: clamp(160px, 22vw, 300px); }
+.vg-cone-tag { position: absolute; bottom: -26px; font: 500 0.66rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); }
+.vg-cone-tag.t-past { left: 0; } .vg-cone-tag.t-now { left: 38%; transform: translateX(-50%); color: var(--v-soft); } .vg-cone-tag.t-future { right: 0; }
+.vg-cone-lg::after { content: ""; position: absolute; left: 38%; top: 6%; bottom: 6%; border-left: 1px solid var(--v-line); }
+
+/* ---------- seções ---------- */
+.vg-intro-text { grid-column: 1 / 8; }
+.vg-spec { grid-column: 9 / -1; align-self: end; margin: 0; border-top: 1px solid var(--v-ink); }
+.vg-spec div { display: grid; grid-template-columns: 7rem 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--v-line); }
+.vg-spec dt { font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); }
+.vg-spec dd { margin: 0; font-size: 0.95rem; }
+
+.vg-name-def { grid-column: 1 / 7; }
+.vg-name-body { grid-column: 7 / -1; align-self: end; }
+.vg-word { font-size: clamp(4rem, 13vw, 12rem); letter-spacing: -0.05em; line-height: 0.9; }
+.vg-def { margin: clamp(14px, 2vw, 24px) 0 0; max-width: 30ch; font-size: 1.1rem; font-weight: 300; color: var(--v-soft); }
+.vg-def span { display: block; margin-bottom: 6px; font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); font-style: normal; }
+
+.vg-symbol-grid { margin-top: clamp(40px, 5vw, 72px); }
+.vg-sym-main { grid-column: 1 / 8; }
+.vg-sym-side { grid-column: 8 / -1; display: grid; gap: clamp(20px, 3vw, 40px); align-content: end; }
+.vg-sym-side .vg-frame { aspect-ratio: 16 / 10 !important; }
+
+.vg-col-head { grid-column: 1 / 7; }
+.vg-side { grid-column: 8 / -1; align-self: end; margin-top: 0; }
+.vg-palette { display: flex; gap: 4px; margin-top: clamp(56px, 7vw, 100px); }
+.vg-sw { display: flex; flex-direction: column; gap: 6px; min-width: 64px; flex-basis: 0; }
+.vg-sw-chip { height: clamp(120px, 16vw, 210px); background: var(--sw); border: 1px solid var(--v-line); }
+.vg-sw-name { margin-top: 8px; font-size: 0.9rem; }
+.vg-sw-hex { font: 500 0.68rem var(--font-mono); letter-spacing: 0.06em; color: var(--v-dim); }
+.vg-note { margin: 14px 0 0; font: 500 0.68rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-dim); }
+.vg-type { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 40px); margin-top: clamp(56px, 7vw, 100px); }
+.vg-type-card { display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--v-ink); }
+.vg-type-role { font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); }
+.vg-type-aa { font-size: clamp(5rem, 11vw, 10rem); font-weight: 300; line-height: 1; letter-spacing: -0.04em; }
+.vg-type-aa.is-mono { font-weight: 400; letter-spacing: -0.02em; }
+.vg-type-sample { font-size: clamp(1.3rem, 2.4vw, 2rem); font-weight: 300; }
+.vg-type-sample.is-mono { font-size: clamp(0.9rem, 1.5vw, 1.2rem); font-weight: 400; letter-spacing: 0.02em; }
+
+.vg-app-grid { margin-top: clamp(40px, 5vw, 72px); }
+.vg-app-main { grid-column: 1 / -1; }
+.vg-app-half { grid-column: span 6; }
+
+/* ---------- 3. cena final "The quiet before" ---------- */
+.vg-final { position: relative; height: 300vh; padding: 0; }   /* sticky: sem o padding global de section */
+.vg-final-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.vg-final-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vg-final-head { position: relative; padding-top: clamp(90px, 13vh, 130px); }
+.vg-final-aviso {
+  position: absolute; left: 0; right: 0; bottom: 15%; margin: 0;
+  display: flex; align-items: center; gap: 14px; opacity: 0;
+  font-weight: 300; font-size: clamp(1.4rem, 2.8vw, 2.4rem); letter-spacing: -0.02em;
+}
+.vg-final-aviso i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--v-accent); }
+.vg-final-end { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 var(--gutter); pointer-events: none; }
+.vg-final-fecho { margin: 0; opacity: 0; text-wrap: balance; font-weight: 300; font-size: clamp(1.6rem, 3.6vw, 3.2rem); letter-spacing: -0.025em; }
+.vg-final-word { margin: clamp(10px, 2vw, 24px) 0 0; opacity: 0; font-weight: 300; font-size: clamp(5rem, 19vw, 17rem); line-height: 0.9; letter-spacing: -0.02em; }
+
+@media (max-width: 720px) {
+  .vg-intro-text, .vg-spec, .vg-name-def, .vg-name-body, .vg-sym-main, .vg-sym-side, .vg-col-head, .vg-side, .vg-app-half { grid-column: 1 / -1; }
+  .vg-spec { margin-top: 24px; }
+  .vg-side { margin-top: 24px; }
+  .vg-indent { margin-right: 0; }
+  /* no celular a paleta vira barras horizontais: a largura continua mostrando a proporção de uso */
+  .vg-palette { flex-direction: column; gap: 10px; }
+  .vg-sw { flex-direction: row; align-items: center; gap: 12px; min-width: 0; }
+  .vg-sw-chip { flex: none; height: 34px; width: max(10px, calc(var(--u) * 0.56%)); }
+  .vg-sw-name { margin-top: 0; }
+  .vg-type { grid-template-columns: 1fr; }
+  .vg-cone-tag { white-space: nowrap; font-size: 0.6rem; }
+  .vg-final-aviso { bottom: 12%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub { animation: none; }
+  .js .vg-g, .js .vg-g-title, .js .vg-frame { transition: none; }
+  .vg-final { height: auto; }
+  .vg-final-sticky { position: relative; height: auto; min-height: 100svh; }
+}
