@@ -1443,6 +1443,7 @@ a.service-row { color: inherit; }
 /* =========================================================
    CASE "VIGÍLIA" (estilo: "vigilia", ex: VIGIL)
    Claro e arejado (papel + tinta + cinzas), um único acento frio que só aparece quando algo é detectado.
+   O campo (pontos que respiram) e o anel (atenção) são desenhados em canvas por project-page.js.
    Movimento lento, sem bounce. Cores provisórias (TROCAR) vêm do "tema" em projects.js.
    ========================================================= */
 /* header claro enquanto o case está na tela (o atributo é posto/retirado por setupVigil) */
@@ -1489,21 +1490,34 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 .vg-text p:last-child { margin-bottom: 0; }
 .vg-indent { margin-left: auto; margin-right: 8%; }
 
-/* ---------- hero ---------- */
-.vg-hero { padding: clamp(130px, 18vh, 200px) 0 clamp(40px, 6vw, 80px); }
+/* divisória: uma fileira de pontos parados (o campo em miniatura) */
+.vg-rule { height: 6px; background: radial-gradient(circle, color-mix(in srgb, var(--v-ink) 30%, transparent) 1.2px, transparent 1.7px) 0 50% / 26px 6px repeat-x; }
+
+/* ---------- hero: o campo respira atrás do nome ---------- */
+.vg-hero { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; padding: 0; }
+.vg-field { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.vg-hero-field {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 34%, transparent 70%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 34%, transparent 70%);
+}
+.vg-hero-top { position: relative; width: 100%; padding-top: clamp(100px, 14vh, 130px); }
+.vg-hero-top .back-link { margin: 0; }
+.vg-hero-bottom { position: relative; width: 100%; margin-top: auto; padding-bottom: clamp(56px, 9vh, 110px); }
 .vg-kicker { margin: 0 0 clamp(16px, 2vw, 28px); font: 500 0.74rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-soft); }
 .vg-title {
   margin: 0 0 0 -0.04em; font-family: var(--v-sans); font-weight: 300;
   font-size: clamp(5.5rem, 25vw, 24rem); line-height: 0.84; letter-spacing: -0.02em;
 }
 .vg-sub { margin: clamp(18px, 2.4vw, 32px) 0 0; font-size: clamp(1.1rem, 2vw, 1.6rem); font-weight: 300; color: var(--v-soft); letter-spacing: -0.01em; }
-.js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub { animation: vg-in 1.8s var(--vg-ease) both; }
+.js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub, .js .vg-hero-field { animation: vg-in 1.8s var(--vg-ease) both; }
 .js .vg-title { animation-name: vg-title-in; animation-duration: 2.4s; animation-delay: 0.15s; }
 .js .vg-sub { animation-delay: 0.7s; }
+.js .vg-hero-field { animation-name: vg-fade; animation-duration: 3s; }
 @keyframes vg-in { from { opacity: 0; transform: translateY(16px); } }
 @keyframes vg-title-in { from { opacity: 0; letter-spacing: 0.04em; } }
+@keyframes vg-fade { from { opacity: 0; } }
 
-/* ---------- 1. fantasma do que vem ----------
+/* ---------- fantasma do que vem ----------
    antes de entrar: invisível; na faixa inferior: contorno a ~7%, deslocado 24 px;
    ao confirmar: sobe a opacidade, encaixa no lugar e (nos títulos) se preenche */
 .js .vg-g { opacity: 0; transform: translateY(24px); transition: opacity 1.1s var(--vg-ease), transform 1.5s var(--vg-ease); }
@@ -1533,21 +1547,6 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 .vg-fig figcaption { margin-top: 10px; font: 500 0.68rem var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--v-dim); }
 .vg-wide { margin-top: clamp(48px, 6vw, 90px); }
 
-/* ---------- 2. cone de confiança (divisórias) ---------- */
-.vg-cone { position: relative; height: clamp(64px, 8vw, 110px); margin: 0 var(--gutter); max-width: calc(var(--container) - 2 * var(--gutter)); color: var(--v-ink); }
-@media (min-width: 1321px) { .vg-cone { margin: 0 auto; } }
-.vg-cone svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.vg-band { fill: url(#vg-fade); }
-.vg-band.b3 { opacity: 0.045; } .vg-band.b2 { opacity: 0.06; } .vg-band.b1 { opacity: 0.09; }
-.vg-past { fill: none; stroke: var(--v-ink); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: 0.7; }
-.vg-mean { fill: none; stroke: var(--v-ink); stroke-width: 1; vector-effect: non-scaling-stroke; stroke-dasharray: 2 5; opacity: 0.3; }
-/* espécime (Visual Identity) */
-.vg-cone-spec { margin-top: clamp(64px, 8vw, 120px); }
-.vg-cone-lg { margin: 0; max-width: none; height: clamp(160px, 22vw, 300px); }
-.vg-cone-tag { position: absolute; bottom: -26px; font: 500 0.66rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); }
-.vg-cone-tag.t-past { left: 0; } .vg-cone-tag.t-now { left: 38%; transform: translateX(-50%); color: var(--v-soft); } .vg-cone-tag.t-future { right: 0; }
-.vg-cone-lg::after { content: ""; position: absolute; left: 38%; top: 6%; bottom: 6%; border-left: 1px solid var(--v-line); }
-
 /* ---------- seções ---------- */
 .vg-intro-text { grid-column: 1 / 8; }
 .vg-spec { grid-column: 9 / -1; align-self: end; margin: 0; border-top: 1px solid var(--v-ink); }
@@ -1559,7 +1558,7 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 .vg-name-body { grid-column: 7 / -1; align-self: end; }
 .vg-word { font-size: clamp(4rem, 13vw, 12rem); letter-spacing: -0.05em; line-height: 0.9; }
 .vg-def { margin: clamp(14px, 2vw, 24px) 0 0; max-width: 30ch; font-size: 1.1rem; font-weight: 300; color: var(--v-soft); }
-.vg-def span { display: block; margin-bottom: 6px; font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); font-style: normal; }
+.vg-def span { display: block; margin-bottom: 6px; font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-dim); }
 
 .vg-symbol-grid { margin-top: clamp(40px, 5vw, 72px); }
 .vg-sym-main { grid-column: 1 / 8; }
@@ -1568,6 +1567,18 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 
 .vg-col-head { grid-column: 1 / 7; }
 .vg-side { grid-column: 8 / -1; align-self: end; margin-top: 0; }
+
+/* linguagem gráfica: ponto / anel / sinal */
+.vg-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 40px); margin-top: clamp(56px, 7vw, 100px); }
+.vg-leg { padding-top: 18px; border-top: 1px solid var(--v-ink); }
+.vg-leg svg { display: block; width: min(100%, 220px); height: auto; overflow: visible; }
+.vg-leg p { margin: 18px 0 0; max-width: 30ch; color: var(--v-soft); font-size: 0.95rem; line-height: 1.55; }
+.vg-leg b { display: block; margin-bottom: 4px; font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--v-ink); }
+.lg-dot { fill: color-mix(in srgb, var(--v-ink) 34%, transparent); }
+.lg-acc { fill: var(--v-accent); }
+.lg-ring { fill: none; stroke: color-mix(in srgb, var(--v-ink) 75%, transparent); stroke-width: 1; }
+.lg-ring-acc { fill: none; stroke: var(--v-accent); stroke-width: 1; }
+
 .vg-palette { display: flex; gap: 4px; margin-top: clamp(56px, 7vw, 100px); }
 .vg-sw { display: flex; flex-direction: column; gap: 6px; min-width: 64px; flex-basis: 0; }
 .vg-sw-chip { height: clamp(120px, 16vw, 210px); background: var(--sw); border: 1px solid var(--v-line); }
@@ -1586,13 +1597,12 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 .vg-app-main { grid-column: 1 / -1; }
 .vg-app-half { grid-column: span 6; }
 
-/* ---------- 3. cena final "The quiet before" ---------- */
+/* ---------- cena final "The quiet before" ---------- */
 .vg-final { position: relative; height: 300vh; padding: 0; }   /* sticky: sem o padding global de section */
 .vg-final-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
-.vg-final-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .vg-final-head { position: relative; padding-top: clamp(90px, 13vh, 130px); }
-.vg-final-aviso {
-  position: absolute; left: 0; right: 0; bottom: 15%; margin: 0;
+.vg-final-line {
+  position: absolute; left: 0; right: 0; bottom: 13%; margin: 0;
   display: flex; align-items: center; gap: 14px; opacity: 0;
   font-weight: 300; font-size: clamp(1.4rem, 2.8vw, 2.4rem); letter-spacing: -0.02em;
 }
@@ -1601,23 +1611,38 @@ html[data-header-theme="light"] .nav-cta { background: rgba(21, 25, 28, 0.04); }
 .vg-final-fecho { margin: 0; opacity: 0; text-wrap: balance; font-weight: 300; font-size: clamp(1.6rem, 3.6vw, 3.2rem); letter-spacing: -0.025em; }
 .vg-final-word { margin: clamp(10px, 2vw, 24px) 0 0; opacity: 0; font-weight: 300; font-size: clamp(5rem, 19vw, 17rem); line-height: 0.9; letter-spacing: -0.02em; }
 
+/* ---------- régua de previsão (lateral): o ponto é onde você está; o anel, onde vai parar ---------- */
+.vg-rail {
+  position: fixed; z-index: 30; right: clamp(8px, 1.6vw, 24px); top: 50%; height: 32vh; width: 1px;
+  transform: translateY(-50%); background: var(--v-line); pointer-events: none;
+  opacity: 0; transition: opacity 0.8s var(--vg-ease);
+}
+.vg-rail.is-on { opacity: 1; }
+.vg-rail i { position: absolute; left: 50%; top: 0; border-radius: 50%; will-change: transform; }
+.vg-rail-cur { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; background: var(--v-ink); }
+.vg-rail-pred { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border: 1px solid color-mix(in srgb, var(--v-ink) 70%, transparent); }
+
 @media (max-width: 720px) {
   .vg-intro-text, .vg-spec, .vg-name-def, .vg-name-body, .vg-sym-main, .vg-sym-side, .vg-col-head, .vg-side, .vg-app-half { grid-column: 1 / -1; }
   .vg-spec { margin-top: 24px; }
   .vg-side { margin-top: 24px; }
   .vg-indent { margin-right: 0; }
+  .vg-legend { grid-template-columns: 1fr; }
+  .vg-leg { display: grid; grid-template-columns: 120px 1fr; gap: 18px; align-items: start; }
+  .vg-leg p { margin-top: 0; }
   /* no celular a paleta vira barras horizontais: a largura continua mostrando a proporção de uso */
   .vg-palette { flex-direction: column; gap: 10px; }
   .vg-sw { flex-direction: row; align-items: center; gap: 12px; min-width: 0; }
   .vg-sw-chip { flex: none; height: 34px; width: max(10px, calc(var(--u) * 0.56%)); }
   .vg-sw-name { margin-top: 0; }
   .vg-type { grid-template-columns: 1fr; }
-  .vg-cone-tag { white-space: nowrap; font-size: 0.6rem; }
-  .vg-final-aviso { bottom: 12%; }
+  .vg-final-line { bottom: 11%; }
+  .vg-rail { right: 12px; }
+  .vg-hero-field { -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 58%); mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 58%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub { animation: none; }
+  .js .vg-hero .vg-kicker, .js .vg-title, .js .vg-sub, .js .vg-hero-field { animation: none; }
   .js .vg-g, .js .vg-g-title, .js .vg-frame { transition: none; }
   .vg-final { height: auto; }
   .vg-final-sticky { position: relative; height: auto; min-height: 100svh; }

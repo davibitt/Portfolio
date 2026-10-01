@@ -469,8 +469,10 @@ const TODOS_PROJETOS = [
     ano: "",   // TROCAR: ano do projeto
     resumo: "Predictive infrastructure intelligence.",
     subtitulo: "Predictive infrastructure intelligence.",
-    // estilo "vigilia": a página já sabe o que vem. O esqueleto de cada bloco aparece antes, em contorno,
-    // e "confirma" ao chegar; divisórias em cone de confiança; cena final em canvas 2D ("The quiet before").
+    // estilo "vigilia": vigiar para que os outros possam descansar. O "campo" (grade de pontos que respira
+    // devagar, como quem dorme) é o mundo descansando; o anel é a atenção, que chega ANTES de algo acontecer.
+    // A página também prevê você: o esqueleto de cada bloco aparece antes e "confirma" ao chegar, e a régua
+    // lateral marca onde a sua rolagem vai parar. Cena final em canvas 2D ("The quiet before").
     // Em aberto (não assumir): se é cliente real e que tipo de infraestrutura. Por isso o case é abstrato.
     estilo: "vigilia",
     info: [
@@ -530,7 +532,13 @@ const TODOS_PROJETOS = [
         // TROCAR: rascunho a partir da identidade provisória
         textos: [
           "A light, open palette of paper, ink and intermediate greys, with a single cold accent that only appears when something is detected.",
-          "The cone of confidence — narrow and sharp in the past, wide and faint in the future — is part of the identity, not just decoration."
+          "The field — a quiet grid of points, breathing slowly, each one being watched — is the main graphic element. Attention is drawn as a ring, and it arrives before anything happens."
+        ],
+        // TROCAR: linguagem gráfica (interpretação minha do conceito; ilustrativa)
+        campo: [
+          { nome: "Point", texto: "Something being watched. At rest, it breathes with the others." },
+          { nome: "Ring", texto: "Attention. It arrives before anything happens." },
+          { nome: "Signal", texto: "The only accent — used only when something is detected." }
         ],
         // TROCAR: nomes, HEX e proporções de uso (as proporções são ilustrativas)
         cores: [
@@ -557,8 +565,10 @@ const TODOS_PROJETOS = [
         ]
       },
       {
-        // cena final: linhas de sensores (ilustrativas), um desvio previsto aos ~60% e a volta à calma
+        // cena final: o campo dorme; o anel chega a um ponto calmo; só depois o ponto perde o ritmo (acento);
+        // os vizinhos quase pegam o ritmo, mas tudo volta a respirar junto
         layout: "vg-final", nome: "The quiet before",
+        calma: "While others rest.",                     // TROCAR: rascunho (intenção "vigiar para que os outros descansem")
         aviso: "A small drift. Seen early.",              // TROCAR: rascunho da frase calma
         fecho: "Nothing happened. That's the point."      // TROCAR: rascunho
       }
