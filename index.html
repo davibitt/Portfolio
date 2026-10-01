@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Davi Bittencourt — Art Director & Graphic Designer</title>
+  <meta name="description" content="Portfolio of Davi Bittencourt — brand identity, web, editorial and motion." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>document.documentElement.classList.replace("no-js","js")</script>
+</head>
+<body data-page="home">
+
+  <div class="fog" aria-hidden="true"><canvas id="fluid"></canvas></div>
+
+  <header class="site-header" data-header></header>
+
+  <main id="page">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap">
+        <p class="hero-tag reveal"><span class="dot"></span>Available for new projects</p>
+        <h1 class="reveal">Davi<br>Bittencourt</h1>
+        <div class="hero-bottom reveal">
+          <p class="hero-role">Art director and graphic designer. I build brand identities — and, when the project calls for it, the website and motion that come with them.</p>
+          <ul class="hero-disciplines">
+            <li>Branding</li>
+            <li>Web</li>
+            <li>Editorial</li>
+            <li>Motion</li>
+          </ul>
+        </div>
+      </div>
+      <a class="scroll-cue" href="#work">scroll to see the work ↓</a>
+    </section>
+
+    <!-- PROJETOS EM DESTAQUE -->
+    <section id="work">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-index">(01)</span>
+          <h2>Selected work</h2>
+        </div>
+        <div class="projects-grid" data-projects-grid data-filter="featured"></div>
+        <a class="more-link reveal" href="work.html">All projects <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <!-- SOBRE (resumo) — TROCAR pelo seu texto -->
+    <section class="home-about">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-index">(02)</span>
+          <h2>About</h2>
+        </div>
+        <p class="about-statement reveal">
+          Write one or two sentences here about <span>who you are and what drives you as a designer</span> —
+          the kind of brands you like to build and what sets you apart as an art director.
+        </p>
+        <a class="more-link reveal" href="about.html">More about me <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <!-- SERVIÇOS (resumo) -->
+    <section>
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="section-index">(03)</span>
+          <h2>What I do</h2>
+        </div>
+        <div class="services-list">
+          <a class="service-row reveal" href="services.html"><span class="num">01</span><h3>Branding</h3><p>Visual identity, brand systems and guidelines.</p></a>
+          <a class="service-row reveal" href="services.html"><span class="num">02</span><h3>Web</h3><p>Websites built from the brand identity, from design to code.</p></a>
+          <a class="service-row reveal" href="services.html"><span class="num">03</span><h3>Editorial</h3><p>Layout and graphic design for print and digital pieces.</p></a>
+          <a class="service-row reveal" href="services.html"><span class="num">04</span><h3>Motion</h3><p>Animation and video that bring the brand to life on screen.</p></a>
+        </div>
+        <a class="more-link reveal" href="services.html">Services &amp; process <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section data-cta></section>
+  </main>
+
+  <footer class="site-footer" data-footer></footer>
+
+  <script src="js/site-config.js"></script>
+  <script src="js/projects.js"></script>
+  <script src="js/fluid.js"></script>
+  <script src="js/layout.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
