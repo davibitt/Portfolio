@@ -1639,21 +1639,23 @@ function lyClose(el, p, reduce) {
 
 /* =========================================================
    CASE "VIGÍLIA" (projetos com estilo: "vigilia", ex: VIGIL)
-   Vigilância calma: a página já sabe o que vem, e o melhor resultado é nada acontecer.
-   - Fantasma do que vem: cada título/caixa de imagem aparece antes, em contorno (~7%), na faixa
-     inferior da tela; ao se aproximar, "confirma" (sobe a opacidade, corrige ~24 px e se preenche).
-     Só CSS + IntersectionObserver (classes .vg-g, .is-predicted, .is-confirmed).
-   - Cone de confiança: divisórias entre seções (passado estreito e nítido, futuro largo e esmaecido),
-     que se abrem com a rolagem.
-   - Cena final "The quiet before" (canvas 2D): linhas de sensores; à direita do NOW viram previsão;
-     aos ~60% uma linha se desvia (único momento do acento), o cone se estreita e ela volta à calma.
-   Números, rótulos (S-01, NOW...) e faixas de confiança são ILUSTRATIVOS (não são dados reais).
+   "Vigiar para que os outros possam descansar."
+   - O CAMPO: grade de pontos que respira devagar, como quem dorme (o mundo descansando). Canvas 2D.
+   - O ANEL: a atenção. Chega ANTES de algo acontecer. No hero, passeia pelos pontos com calma e,
+     no desktop, vai para onde o cursor VAI estar (posição prevista pela velocidade), não onde ele está.
+   - Fantasma do que vem: títulos/caixas aparecem antes, em contorno (~7%), e "confirmam" ao chegar.
+   - Régua de previsão: na lateral, um anel marca onde a sua rolagem VAI parar; encolhe ao se confirmar.
+   - Cena final "The quiet before": o anel chega a um ponto calmo; só depois o ponto perde o ritmo
+     (único momento do acento); os vizinhos quase o acompanham; tudo volta a respirar junto.
+   Rótulos e números são ILUSTRATIVOS (não são dados reais).
    ========================================================= */
 const vgNum = (i) => String(i).padStart(2, "0");
 const vgLabel = (s, i, n) => `<p class="vg-label vg-g vg-g-text"><span>${vgNum(i + 1)} / ${vgNum(n)}</span>${s.nome}</p>`;
 const vgTitle = (s, cls) => s.titulo ? `<h2 class="${cls || "vg-h2"} vg-g vg-g-title">${s.titulo}</h2>` : "";
 const vgText = (s, cls) => (s.textos || []).length
   ? `<div class="vg-text vg-g vg-g-text ${cls || ""}">${s.textos.map((t) => `<p>${t}</p>`).join("")}</div>` : "";
+// divisória: uma fileira de pontos (o campo em miniatura), parada
+const vgRule = () => `<div class="wrap" aria-hidden="true"><div class="vg-rule"></div></div>`;
 
 // imagem, vídeo ou espaço reservado: caixa de traço fino (é ela que aparece como "fantasma")
 function vgMedia(m, cls) {
@@ -1669,15 +1671,16 @@ function vgMedia(m, cls) {
     </figure>`;
 }
 
-// cone de confiança (o desenho é feito em vgConePaths; "lg" = espécime da seção Visual Identity)
-const vgCone = (lg) => `
-  <div class="vg-cone${lg ? " vg-cone-lg vg-g vg-g-box" : ""}" aria-hidden="true"${lg ? ` data-static` : ""}>
-    <svg viewBox="0 0 1000 100" preserveAspectRatio="none">
-      <path class="vg-band b3"/><path class="vg-band b2"/><path class="vg-band b1"/>
-      <path class="vg-mean"/><path class="vg-past"/>
-    </svg>
-    ${lg ? `<span class="vg-cone-tag t-past">Past</span><span class="vg-cone-tag t-now">Now</span><span class="vg-cone-tag t-future">Forecast · 50 / 80 / 95 %</span>` : ""}
-  </div>`;
+// legenda da linguagem gráfica: ponto / anel / sinal, desenhados num pedaço do campo (5 x 3 pontos)
+function vgLegendSvg(kind) {
+  let dots = "";
+  for (let j = 0; j < 3; j++) for (let i = 0; i < 5; i++) {
+    const c = i === 2 && j === 1;
+    dots += `<circle cx="${12 + i * 24}" cy="${12 + j * 24}" r="${c && kind === "signal" ? 3.2 : 2}" class="${c && kind === "signal" ? "lg-acc" : "lg-dot"}"/>`;
+  }
+  const ring = kind === "point" ? "" : `<circle cx="60" cy="36" r="11" class="${kind === "signal" ? "lg-ring-acc" : "lg-ring"}"/>`;
+  return `<svg viewBox="0 0 120 72" aria-hidden="true">${dots}${ring}</svg>`;
+}
 
 const VG_LAYOUTS = {
   "vg-intro": (s, p, i, n) => `
@@ -1740,6 +1743,7 @@ const VG_LAYOUTS = {
     const cores = s.cores || [];
     const total = cores.reduce((a, c) => a + (c.uso || 1), 0) || 1;
     const maxUso = Math.max(1, ...cores.map((c) => c.uso || 1));
+    const kinds = ["point", "ring", "signal"];
     return `
     <section class="vg-sec vg-identity">
       <div class="wrap">
@@ -1747,6 +1751,14 @@ const VG_LAYOUTS = {
           <div class="vg-col-head">${vgLabel(s, i, n)}${vgTitle(s)}</div>
           ${vgText(s, "vg-side")}
         </div>
+        ${(s.campo || []).length ? `
+        <div class="vg-legend">
+          ${s.campo.map((c, k) => `
+            <div class="vg-leg vg-g vg-g-box">
+              ${vgLegendSvg(kinds[k] || "point")}
+              <p><b>${c.nome}</b>${c.texto}</p>
+            </div>`).join("")}
+        </div>` : ""}
         ${cores.length ? `
         <div class="vg-palette vg-g vg-g-box">
           ${cores.map((c) => `
@@ -1766,10 +1778,6 @@ const VG_LAYOUTS = {
               <span class="vg-type-sample${f.mono ? " is-mono" : ""}" style="font-family:${f.familia}">${f.exemplo || ""}</span>
             </div>`).join("")}
         </div>` : ""}
-        <div class="vg-cone-spec">
-          <p class="vg-label vg-g vg-g-text"><span>—</span>Cone of confidence</p>
-          ${vgCone(true)}
-        </div>
       </div>
     </section>`;
   },
@@ -1787,13 +1795,14 @@ const VG_LAYOUTS = {
     </section>`;
   },
 
-  // cena final: o canvas desenha as linhas; os textos entram por cima conforme a rolagem
+  // cena final: o canvas desenha o campo e o anel; os textos entram por cima conforme a rolagem
   "vg-final": (s, p, i, n) => `
     <section class="vg-final" data-vg-final aria-label="${(s.fecho || "").replace(/"/g, "")}">
       <div class="vg-final-sticky">
-        <canvas class="vg-final-canvas" aria-hidden="true"></canvas>
+        <canvas class="vg-field" aria-hidden="true"></canvas>
         <div class="wrap vg-final-head"><p class="vg-label"><span>${vgNum(i + 1)} / ${vgNum(n)}</span>${s.nome || ""}</p></div>
-        ${s.aviso ? `<p class="wrap vg-final-aviso"><i></i>${s.aviso}</p>` : ""}
+        ${s.calma ? `<p class="wrap vg-final-line vg-final-calma">${s.calma}</p>` : ""}
+        ${s.aviso ? `<p class="wrap vg-final-line vg-final-aviso"><i></i>${s.aviso}</p>` : ""}
         <div class="vg-final-end">
           ${s.fecho ? `<p class="vg-final-fecho">${s.fecho}</p>` : ""}
           <p class="vg-final-word">${p.titulo}</p>
@@ -1808,8 +1817,9 @@ function renderVigil(p) {
   const n = p.secoes.length;
   const hero = `
     <header class="vg-hero">
-      <div class="wrap">
-        <a class="back-link" href="work.html">&larr; All work</a>
+      <canvas class="vg-field vg-hero-field" aria-hidden="true"></canvas>
+      <div class="wrap vg-hero-top"><a class="back-link" href="work.html">&larr; All work</a></div>
+      <div class="wrap vg-hero-bottom">
         <p class="vg-kicker">${p.categoria}${p.ano ? " — " + p.ano : ""}</p>
         <h1 class="vg-title">${p.titulo}</h1>
         ${p.subtitulo ? `<p class="vg-sub">${p.subtitulo}</p>` : ""}
@@ -1819,41 +1829,279 @@ function renderVigil(p) {
     const fn = VG_LAYOUTS[s.layout];
     if (!fn) { console.warn("Layout desconhecido:", s.layout); return ""; }
     return fn(s, p, i, n);
-  }).join(vgCone());
+  });
+  // a régua não vai antes da cena final (ela ocupa a tela inteira)
+  const html = body.map((b, i) => b + (i < body.length - 2 ? vgRule() : "")).join("");
   return `
     <article class="vg-case" style="${vars}">
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-        <defs><linearGradient id="vg-fade" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0" stop-color="currentColor" stop-opacity="1"/><stop offset="1" stop-color="currentColor" stop-opacity="0.2"/>
-        </linearGradient></defs>
-      </svg>
-      ${hero}${vgCone()}${body}
+      ${hero}${html}
+      <div class="vg-rail" aria-hidden="true"><i class="vg-rail-cur"></i><i class="vg-rail-pred"></i></div>
     </article>`;
 }
 
-// desenho do cone (viewBox 1000 x 100): k = abertura (0 fechado, 1 aberto); seed varia o "sinal observado"
-function vgConePaths(k, seed) {
-  const NOW = 380, CY = 50;
-  // passado: sinal observado, estreito e nítido (termina exatamente no NOW, no centro)
-  let past = "";
-  for (let x = 0; x <= NOW; x += 8) {
-    const fade = Math.min(1, (NOW - x) / 60);
-    const y = CY + fade * (Math.sin(x * 0.045 + seed) * 2.2 + Math.sin(x * 0.13 + seed * 2.3) * 1.1);
-    past += (x ? " L" : "M") + x + " " + y.toFixed(2);
-  }
-  past += ` L${NOW} ${CY}`;
-  // futuro: faixas de confiança (95 / 80 / 50 %) que se alargam e esmaecem
-  const band = (W) => {
-    const top = [], bot = [];
-    for (let s = 0; s <= 24; s++) {
-      const f = s / 24, x = NOW + (1000 - NOW) * f;
-      const w = 0.4 + k * W * Math.pow(f, 0.85);
-      top.push(`${x.toFixed(1)} ${(CY - w).toFixed(2)}`);
-      bot.unshift(`${x.toFixed(1)} ${(CY + w).toFixed(2)}`);
-    }
-    return `M${top.join(" L")} L${bot.join(" L")} Z`;
+// ---------- o campo: grade de pontos que respira (compartilhado pelo hero e pela cena final) ----------
+function vgField(canvas) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  const cs = getComputedStyle(canvas);
+  const INK = cs.getPropertyValue("--v-ink").trim() || "#15191C";
+  const ACC = cs.getPropertyValue("--v-accent").trim() || "#2F8F83";
+  const PAPER = cs.getPropertyValue("--v-paper").trim() || "#F3F1EA";
+  // o mesmo papel com alfa 0 (gradiente para "transparent" puxa para o cinza no canvas)
+  const PAPER0 = (() => { const m = PAPER.match(/^#([0-9a-f]{6})$/i); if (!m) return "rgba(243,241,234,0)"; const n = parseInt(m[1], 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},0)`; })();
+  const BREATH = (Math.PI * 2) / 5.6;   // uma respiração a cada ~5,6 s, como quem dorme
+  const F = { W: 0, H: 0, gap: 24, cols: 0, rows: 0, ox: 0, oy: 0, dpr: 1, INK, ACC };
+  // respiração de um ponto (0..1): uma onda longa e lenta atravessa o campo na diagonal
+  F.breath = (t, x, y) => 0.5 + 0.5 * Math.sin(t * BREATH - (x * 0.0042 + y * 0.0061));
+  F.size = () => {
+    F.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    F.W = canvas.clientWidth; F.H = canvas.clientHeight;
+    canvas.width = Math.max(1, Math.round(F.W * F.dpr)); canvas.height = Math.max(1, Math.round(F.H * F.dpr));
+    F.gap = F.W < 720 ? 20 : 26;
+    F.cols = Math.floor(F.W / F.gap); F.rows = Math.floor(F.H / F.gap);
+    F.ox = (F.W - (F.cols - 1) * F.gap) / 2; F.oy = (F.H - (F.rows - 1) * F.gap) / 2;
   };
-  return { past, mean: `M${NOW} ${CY} L1000 ${CY}`, b1: band(16), b2: band(30), b3: band(46) };
+  F.dot = (i, j) => ({ x: F.ox + i * F.gap, y: F.oy + j * F.gap });
+  F.nearest = (x, y, maxY, minY) => {
+    const i = Math.min(F.cols - 2, Math.max(1, Math.round((x - F.ox) / F.gap)));
+    const jMin = Math.max(1, Math.ceil(((minY || 0) - F.oy) / F.gap));
+    const jMax = Math.max(jMin, Math.min(Math.floor(((maxY || F.H) - F.oy) / F.gap), F.rows - 2));
+    const j = Math.min(jMax, Math.max(jMin, Math.round((y - F.oy) / F.gap)));
+    return { i, j };
+  };
+  // st: { an: {i, j, d} (ponto fora do ritmo), ring: {x, y, r, k, a, acc}, dim (0..1), clear (0..1, abre o centro) }
+  F.draw = (t, st) => {
+    st = st || {};
+    const g = F.gap, R = g < 24 ? 1.55 : 1.8;
+    ctx.setTransform(F.dpr, 0, 0, F.dpr, 0, 0);
+    ctx.clearRect(0, 0, F.W, F.H);
+    const an = st.an && st.an.d > 0.001 ? st.an : null;
+    const ap = an ? F.dot(an.i, an.j) : null;
+    const sAn = an ? 0.5 + 0.5 * Math.sin(t * BREATH * 2.7 + 1.3 + 0.6 * Math.sin(t * 4.1)) : 0;   // ritmo próprio, irregular
+    ctx.beginPath();
+    for (let j = 0; j < F.rows; j++) {
+      for (let i = 0; i < F.cols; i++) {
+        if (an && i === an.i && j === an.j) continue;
+        const x = F.ox + i * g, y = F.oy + j * g;
+        let s = F.breath(t, x, y);
+        if (an) {   // os vizinhos quase pegam o ritmo do ponto fora de compasso
+          const dd = Math.hypot(x - ap.x, y - ap.y) / g;
+          if (dd < 4) s += (sAn - s) * an.d * 0.42 * (1 - dd / 4);
+        }
+        const r = R * (0.5 + 0.5 * s);
+        ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2);
+      }
+    }
+    ctx.globalAlpha = 0.34 * (1 - 0.55 * (st.dim || 0));
+    ctx.fillStyle = INK; ctx.fill();
+    // o ponto fora do ritmo: treme de leve e ganha o acento
+    if (an) {
+      const x = ap.x + an.d * 2.2 * Math.sin(t * 6.3), y = ap.y + an.d * 1.6 * Math.cos(t * 4.7);
+      const r = R * (0.42 + 0.58 * sAn) * (1 + 0.5 * an.d);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.34 * (1 - an.d); ctx.fillStyle = INK; ctx.fill();
+      ctx.globalAlpha = an.d; ctx.fillStyle = ACC; ctx.fill();
+    }
+    // o centro "abre" para o texto final
+    if (st.clear > 0.001) {
+      const gr = ctx.createRadialGradient(F.W / 2, F.H / 2, 0, F.W / 2, F.H / 2, Math.max(F.W, F.H) * 0.5);
+      gr.addColorStop(0, PAPER); gr.addColorStop(0.55, PAPER); gr.addColorStop(1, PAPER0);
+      ctx.globalAlpha = 0.92 * st.clear; ctx.fillStyle = gr; ctx.fillRect(0, 0, F.W, F.H);
+    }
+    // o anel: atenção
+    const rg = st.ring;
+    if (rg && rg.a > 0.005 && rg.k > 0.005) {
+      ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * rg.k);
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = rg.a * (1 - (rg.acc || 0)) * 0.75; ctx.strokeStyle = INK; ctx.stroke();
+      if (rg.acc > 0.005) { ctx.globalAlpha = rg.a * rg.acc; ctx.strokeStyle = ACC; ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+  };
+  return F;
+}
+
+// laço de animação só enquanto o elemento está na tela; ~30 quadros/s em telas de toque (respiração é lenta)
+function vgLoop(el, fn) {
+  const coarse = !window.matchMedia("(pointer: fine)").matches;
+  let raf = 0, on = false, last = 0, acc = 0;
+  const step = (now) => {
+    raf = 0;
+    if (!on) return;
+    const dt = last ? Math.min(0.1, (now - last) / 1000) : 0; last = now;
+    acc += dt;
+    if (!coarse || acc >= 1 / 31) { fn(now / 1000, acc); acc = 0; }
+    raf = requestAnimationFrame(step);
+  };
+  const io = new IntersectionObserver(([e]) => {
+    on = e.isIntersecting;
+    if (on && !raf) { last = 0; raf = requestAnimationFrame(step); }
+  });
+  io.observe(el);
+  return () => { on = false; cancelAnimationFrame(raf); io.disconnect(); };
+}
+const vgEase = (cur, target, dt, tau) => cur + (target - cur) * (1 - Math.exp(-dt / tau));
+const vgSeg = (p, a, b) => { const t = Math.min(1, Math.max(0, (p - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// ---------- hero: o anel passeia pelo campo; no desktop, vai para onde o cursor VAI estar ----------
+function vgHero(sec, reduce) {
+  const canvas = sec.querySelector(".vg-hero-field");
+  const F = canvas && vgField(canvas);
+  if (!F) return null;
+  const fine = window.matchMedia("(pointer: fine)").matches;
+  F.size();
+  // o anel fica abaixo do header e acima da máscara (onde o campo aparece)
+  const zone = () => F.H * (F.W < 720 ? 0.36 : 0.42);
+  const zTop = () => (F.W < 720 ? 120 : 140);
+  const near = (x, y) => F.nearest(x, y, zone(), zTop());
+  let tgt = near(F.W * 0.68, F.H * 0.26);
+  let p0 = F.dot(tgt.i, tgt.j);
+  const ring = { x: p0.x, y: p0.y, r: 13, k: 0, a: 0 };
+  let nextScan = 0, lastMove = -1e9, t0 = performance.now() / 1000;
+  const cur = { x: 0, y: 0, vx: 0, vy: 0, t: 0 };
+  const onMove = (e) => {
+    const r = canvas.getBoundingClientRect(), now = performance.now();
+    const x = e.clientX - r.left, y = e.clientY - r.top, dt = Math.max(1, now - cur.t);
+    if (now - cur.t < 120) { cur.vx = cur.vx * 0.6 + ((x - cur.x) / dt) * 0.4; cur.vy = cur.vy * 0.6 + ((y - cur.y) / dt) * 0.4; }
+    else { cur.vx = 0; cur.vy = 0; }
+    cur.x = x; cur.y = y; cur.t = now;
+    if (y < 0 || y > F.H) return;
+    lastMove = now / 1000;
+  };
+  if (fine && !reduce) window.addEventListener("pointermove", onMove, { passive: true });
+  function frame(t, dt) {
+    if (t - lastMove <= 2.6) {
+      // previsão: onde o cursor vai estar daqui a ~0,45 s. Quando ele para, a velocidade some
+      // e o anel volta para o cursor (a previsão "se confirma")
+      const age = t * 1000 - cur.t, k = age > 80 ? Math.exp(-(age - 80) / 160) : 1;
+      tgt = near(cur.x + cur.vx * 450 * k, cur.y + cur.vy * 450 * k);
+    } else if (t > nextScan) {
+      // sem cursor recente: o anel escolhe outro ponto por perto, sem pressa
+      const ni = tgt.i + Math.round((Math.random() - 0.5) * 10), nj = tgt.j + Math.round((Math.random() - 0.5) * 6);
+      const c = F.dot(Math.min(F.cols - 2, Math.max(1, ni)), Math.max(1, nj));
+      tgt = near(c.x, c.y);
+      nextScan = t + 2.4 + Math.random() * 1.6;
+    }
+    const d = F.dot(tgt.i, tgt.j);
+    ring.x = vgEase(ring.x, d.x, dt, 0.32); ring.y = vgEase(ring.y, d.y, dt, 0.32);
+    const far = Math.min(1, Math.hypot(d.x - ring.x, d.y - ring.y) / (F.gap * 3));
+    ring.r = vgEase(ring.r, 12 + far * 7, dt, 0.2);          // maior enquanto procura, menor quando assenta
+    const life = t - t0;
+    ring.k = vgSeg(life, 0.8, 2.2); ring.a = ring.k;
+    F.draw(t, { ring });
+  }
+  const resize = () => { F.size(); const d = F.dot(tgt.i, tgt.j); ring.x = d.x; ring.y = d.y; if (reduce) F.draw(0, { ring: { ...ring, k: 1, a: 1 } }); };
+  window.addEventListener("resize", resize);
+  let stop = null;
+  if (reduce) F.draw(0, { ring: { ...ring, k: 1, a: 1 } });
+  else stop = vgLoop(sec, (now, dt) => frame(now, dt));
+  return () => { if (stop) stop(); window.removeEventListener("pointermove", onMove); window.removeEventListener("resize", resize); };
+}
+
+// ---------- cena final "The quiet before" ----------
+function vgFinal(sec, reduce) {
+  const canvas = sec.querySelector(".vg-field");
+  const F = canvas && vgField(canvas);
+  if (!F) return null;
+  const q = (c) => sec.querySelector(c);
+  const calma = q(".vg-final-calma"), aviso = q(".vg-final-aviso"), fecho = q(".vg-final-fecho"), word = q(".vg-final-word");
+  let r = null, p = 0, an = { i: 0, j: 0, d: 0 };
+  const v = { ring: 0, d: 0, end: 0 };
+  function place() {
+    F.size();
+    const mob = F.W < 720;
+    const a = F.nearest(F.W * (mob ? 0.68 : 0.64), F.H * (mob ? 0.4 : 0.44));
+    an.i = a.i; an.j = a.j;
+  }
+  // alvos a partir da rolagem; os valores mostrados se aproximam devagar (sem trancos)
+  const targets = () => ({
+    ring: vgSeg(p, 0.24, 0.32) * (1 - vgSeg(p, 0.72, 0.8)),   // o anel chega antes...
+    d: vgSeg(p, 0.4, 0.48) * (1 - vgSeg(p, 0.6, 0.7)),         // ...do ponto perder o ritmo
+    end: vgSeg(p, 0.8, 0.9)
+  });
+  const lastOp = {};
+  const op = (el, k, val) => {
+    if (!el) return;
+    const s = val.toFixed(3);
+    if (lastOp[k] === s) return;
+    lastOp[k] = s; el.style.opacity = s; el.style.transform = `translateY(${((1 - val) * 10).toFixed(1)}px)`;
+  };
+  function texts() {
+    if (reduce) { op(calma, "c", 0); op(aviso, "a", 0); op(fecho, "f", 1); op(word, "w", 1); return; }
+    op(calma, "c", vgSeg(p, 0.02, 0.08) * (1 - vgSeg(p, 0.2, 0.27)));
+    op(aviso, "a", vgSeg(p, 0.45, 0.51) * (1 - vgSeg(p, 0.65, 0.71)));
+    op(fecho, "f", vgSeg(p, 0.83, 0.89));
+    op(word, "w", vgSeg(p, 0.9, 0.97));
+  }
+  function frame(t, dt) {
+    const T = targets();
+    v.ring = vgEase(v.ring, T.ring, dt, 0.45); v.d = vgEase(v.d, T.d, dt, 0.5); v.end = vgEase(v.end, T.end, dt, 0.5);
+    const c = F.dot(an.i, an.j);
+    an.d = v.d;
+    F.draw(t, {
+      an,
+      ring: { x: c.x, y: c.y, r: (F.gap < 24 ? 13 : 16) + 3 * v.d, k: v.ring, a: Math.min(1, v.ring * 1.4), acc: v.d },
+      dim: v.end, clear: v.end
+    });
+  }
+  place();
+  texts();
+  const onResize = () => { place(); if (reduce) F.draw(0, { dim: 1, clear: 1 }); };
+  window.addEventListener("resize", onResize);
+  let stop = null;
+  if (reduce) F.draw(0, { dim: 1, clear: 1 });
+  else stop = vgLoop(sec, (now, dt) => frame(now, dt));
+  return {
+    measure() { r = sec.getBoundingClientRect(); },
+    update() {
+      if (reduce || !r) return;
+      const np = Math.min(1, Math.max(0, -r.top / (r.height - window.innerHeight)));
+      if (np !== p) { p = np; texts(); }
+    },
+    destroy() { if (stop) stop(); window.removeEventListener("resize", onResize); }
+  };
+}
+
+// ---------- régua de previsão: onde a sua rolagem VAI parar ----------
+function vgRail(el, art, reduce) {
+  if (!el || reduce) { if (el) el.style.display = "none"; return null; }
+  const cur = el.querySelector(".vg-rail-cur"), pred = el.querySelector(".vg-rail-pred");
+  const coarse = !window.matchMedia("(pointer: fine)").matches;
+  const TAU = coarse ? 480 : 260;          // ms: quanto a rolagem ainda anda depois do gesto (inércia)
+  const GROW = coarse ? 1 : 2.4;           // quanto o anel cresce com a incerteza (no toque, menos: fica dentro da tela)
+  let v = 0, lastY = window.scrollY, lastT = performance.now(), lastEv = 0, raf = 0, shown = { p: 0, u: 0 }, H = 0, top = 0, span = 1, vis = false;
+  const measure = () => {
+    const r = art.getBoundingClientRect(), ih = window.innerHeight;
+    H = el.clientHeight; top = window.scrollY + r.top; span = Math.max(1, art.offsetHeight - ih);
+    vis = r.top < -ih * 0.6 && r.bottom > ih * 0.4;
+  };
+  const onScroll = () => {
+    const now = performance.now(), y = window.scrollY, dt = now - lastT;
+    if (dt > 0) v = dt < 140 ? v * 0.55 + ((y - lastY) / dt) * 0.45 : 0;
+    lastY = y; lastT = now; lastEv = now;
+    if (!raf) raf = requestAnimationFrame(loop);
+  };
+  let lt = 0;
+  function loop(now) {
+    raf = 0;
+    const dt = lt ? Math.min(64, now - lt) : 16; lt = now;
+    if (now - lastEv > 90) v *= Math.exp(-dt / 90);      // gesto acabou: a previsão converge
+    measure();
+    const y = window.scrollY, ih = window.innerHeight;
+    const pc = Math.min(1, Math.max(0, (y - top) / span));
+    const pp = Math.min(1, Math.max(0, (y + v * TAU - top) / span));
+    const u = Math.min(1, Math.abs(v * TAU) / ih);        // incerteza: gesto maior, anel maior
+    shown.p = vgEase(shown.p, pp, dt / 1000, 0.08); shown.u = vgEase(shown.u, u, dt / 1000, 0.12);
+    el.classList.toggle("is-on", vis);
+    cur.style.transform = `translate3d(0, ${(pc * H).toFixed(1)}px, 0)`;
+    pred.style.transform = `translate3d(0, ${(shown.p * H).toFixed(1)}px, 0) scale(${(1 + shown.u * GROW).toFixed(3)})`;
+    pred.style.opacity = (0.45 + 0.55 * Math.min(1, shown.u * 3)).toFixed(3);
+    if (Math.abs(v) > 0.003 || Math.abs(shown.p - pc) > 0.0005 || shown.u > 0.002) raf = requestAnimationFrame(loop);
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  onScroll();
+  return () => { cancelAnimationFrame(raf); window.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); };
 }
 
 function setupVigil(root) {
@@ -1864,16 +2112,14 @@ function setupVigil(root) {
   document.documentElement.setAttribute("data-header-theme", "light");
   const offs = [];
 
-  // ---------- 1. fantasma do que vem ----------
+  // fantasma do que vem: previsão ao entrar na tela, confirmação ao passar da linha dos 80%
   const ghosts = [...art.querySelectorAll(".vg-g")];
   if (reduce || !("IntersectionObserver" in window)) {
     ghosts.forEach((el) => el.classList.add("is-predicted", "is-confirmed"));
   } else {
-    // previsão: o elemento entra na tela (fica na faixa inferior, ~20%, até confirmar)
     const predict = new IntersectionObserver((es) => es.forEach((e) => {
       if (e.isIntersecting) e.target.classList.add("is-predicted");
     }), { rootMargin: "0px" });
-    // confirmação: passou da linha dos 80% da tela
     const confirm = new IntersectionObserver((es) => es.forEach((e) => {
       if (!e.isIntersecting) return;
       e.target.classList.add("is-predicted", "is-confirmed");
@@ -1883,48 +2129,19 @@ function setupVigil(root) {
     offs.push(() => { predict.disconnect(); confirm.disconnect(); });
   }
 
-  // ---------- 2. cones de confiança ----------
-  const cones = [...art.querySelectorAll(".vg-cone")].map((el, i) => ({
-    el, k: -1, stat: el.hasAttribute("data-static"),
-    p: ["b1", "b2", "b3"].reduce((o, b) => (o[b] = el.querySelector(".vg-band." + b), o), {
-      past: el.querySelector(".vg-past"), mean: el.querySelector(".vg-mean")
-    }),
-    seed: i * 1.7 + 0.4
-  }));
-  const drawCone = (c, k) => {
-    if (Math.abs(c.k - k) < 0.004) return;
-    c.k = k;
-    const d = vgConePaths(k, c.seed);
-    c.p.past.setAttribute("d", d.past); c.p.mean.setAttribute("d", d.mean);
-    c.p.b1.setAttribute("d", d.b1); c.p.b2.setAttribute("d", d.b2); c.p.b3.setAttribute("d", d.b3);
-  };
-  cones.forEach((c) => { if (c.stat || reduce) drawCone(c, 1); });
-
-  // ---------- 3. cena final ----------
-  const fin = setupVgFinal(art.querySelector("[data-vg-final]"), reduce);
-  if (fin) offs.push(fin.destroy);
-
-  // uma só rotina de rolagem: primeiro mede tudo, depois escreve
-  let ticking = false;
-  function update() {
-    ticking = false;
-    const ih = window.innerHeight;
-    const moving = reduce ? [] : cones.filter((c) => !c.stat);
-    const tops = moving.map((c) => c.el.getBoundingClientRect().top);
-    if (fin) fin.measure();
-    // o cone se abre enquanto atravessa a tela: fechado ao entrar por baixo, aberto perto do meio
-    moving.forEach((c, j) => {
-      const p = Math.min(1, Math.max(0, (ih - tops[j]) / (ih * 0.6)));
-      drawCone(c, p * p * (3 - 2 * p));
-    });
-    if (fin) fin.update();
+  offs.push(vgHero(art.querySelector(".vg-hero"), reduce));
+  const fin = vgFinal(art.querySelector("[data-vg-final]"), reduce);
+  if (fin) {
+    offs.push(fin.destroy);
+    let ticking = false;
+    const update = () => { ticking = false; fin.measure(); fin.update(); };
+    const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+    window.addEventListener("scroll", kick, { passive: true });
+    window.addEventListener("resize", kick);
+    offs.push(() => { window.removeEventListener("scroll", kick); window.removeEventListener("resize", kick); });
+    update();
   }
-  const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
-  window.addEventListener("scroll", kick, { passive: true });
-  window.addEventListener("resize", kick);
-  offs.push(() => { window.removeEventListener("scroll", kick); window.removeEventListener("resize", kick); });
-  update();
-
+  offs.push(vgRail(art.querySelector(".vg-rail"), art, reduce));
   offs.push(pauseFluidUnder(art));
   if (typeof setupVideos === "function") setupVideos();
 
@@ -1932,154 +2149,5 @@ function setupVigil(root) {
     offs.forEach((f) => f && f());
     document.documentElement.removeAttribute("data-header-theme");
     window.__vgCleanup = null;
-  };
-}
-
-// cena final "The quiet before": linhas de sensores em canvas 2D. A rolagem avança o tempo.
-function setupVgFinal(sec, reduce) {
-  if (!sec) return null;
-  const canvas = sec.querySelector("canvas"), ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  const aviso = sec.querySelector(".vg-final-aviso"), fecho = sec.querySelector(".vg-final-fecho"), word = sec.querySelector(".vg-final-word");
-  const cs = getComputedStyle(sec);
-  const INK = cs.getPropertyValue("--v-ink").trim() || "#15191C";
-  const ACC = cs.getPropertyValue("--v-accent").trim() || "#2F8F83";
-  const MONO = (cs.getPropertyValue("--font-mono").trim() || "monospace");
-  const seg = (p, a, b) => { const t = Math.min(1, Math.max(0, (p - a) / (b - a))); return t * t * (3 - 2 * t); };
-
-  // ruído suave 1D (determinístico) para o "sinal observado"
-  const hash = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
-  const vnoise = (x) => { const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f); return hash(i) * (1 - u) + hash(i + 1) * u; };
-  // cada sensor: 3 ondas lentas com fase própria (valores ilustrativos)
-  const SENS = Array.from({ length: 9 }, (_, i) => ({
-    f: [0.31 + hash(i) * 0.2, 0.67 + hash(i + 9) * 0.3, 1.3 + hash(i + 19) * 0.5],
-    ph: [hash(i + 3) * 6.28, hash(i + 5) * 6.28, hash(i + 7) * 6.28],
-    a: [0.55, 0.3, 0.15]
-  }));
-  const DEV = 5;   // índice da linha que se desvia (ilustrativo: "S-06")
-
-  let W = 0, H = 0, dpr = 1, r = null, p = reduce ? 0.3 : 0, drift = 0, last = 0, raf = 0, visible = false;
-  function size() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = canvas.clientWidth; H = canvas.clientHeight;
-    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-  }
-
-  function draw() {
-    const ctxW = W, mob = W < 720;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, ctxW, H);
-    const n = mob ? 7 : 9;
-    const nowX = W * (mob ? 0.58 : 0.64);
-    const y0 = H * 0.25, y1 = H * 0.68, gap = (y1 - y0) / (n - 1);
-    const PX = 100;                                   // px por unidade de tempo
-    const t = p * 18 + drift;                         // a rolagem avança o tempo (18 unidades na cena toda)
-    const end = reduce ? 1 : seg(p, 0.84, 0.93);      // no fecho (e no modo estático), as linhas recuam
-    const lineA = 1 - 0.65 * end;
-    // o desvio: entra pela direita aos ~56%, se aproxima do NOW e se desfaz antes de chegar (nada acontece)
-    const env = reduce ? 0 : seg(p, 0.56, 0.63) * (1 - seg(p, 0.72, 0.8));
-    const xb = W + 60 - (W + 60 - (nowX + 50)) * Math.min(1, Math.max(0, (p - 0.56) / 0.24));
-    const amp = gap * 0.24, sig = mob ? 34 : 48;
-
-    ctx.lineWidth = 1;
-    ctx.font = `500 ${mob ? 9 : 10}px ${MONO}`;
-    ctx.textBaseline = "middle";
-
-    for (let i = 0; i < n; i++) {
-      const S = SENS[i], base = y0 + i * gap, A = gap * 0.2;
-      const smooth = (tau) => A * (S.a[0] * Math.sin(tau * S.f[0] + S.ph[0]) + S.a[1] * Math.sin(tau * S.f[1] + S.ph[1]) + S.a[2] * Math.sin(tau * S.f[2] + S.ph[2]));
-      const isDev = i === DEV;
-      const dev = (x) => (isDev && env > 0 ? -amp * env * Math.exp(-((x - xb) * (x - xb)) / (sig * sig)) : 0);
-      const tauAt = (x) => t + (x - nowX) / PX;
-
-      // cone da previsão (cada linha tem o seu, sem se sobrepor); sobre o desvio ele se estreita
-      const coneW = gap * (mob ? 0.26 : 0.36) * (isDev ? 1 - 0.72 * env : 1);
-      ctx.beginPath();
-      for (let x = nowX; x <= W; x += 6) { const w = coneW * (x - nowX) / (W - nowX); ctx.lineTo(x, base + smooth(tauAt(x)) + dev(x) - w); }
-      for (let x = W; x >= nowX; x -= 6) { const w = coneW * (x - nowX) / (W - nowX); ctx.lineTo(x, base + smooth(tauAt(x)) + dev(x) + w); }
-      ctx.closePath();
-      ctx.globalAlpha = 0.05 * lineA;
-      ctx.fillStyle = INK; ctx.fill();
-      if (isDev && env > 0) { ctx.globalAlpha = 0.12 * env; ctx.fillStyle = ACC; ctx.fill(); }
-
-      // passado (observado): sinal com ruído, traço nítido
-      ctx.beginPath();
-      for (let x = 0; x <= nowX; x += 3) {
-        const tau = tauAt(x);
-        ctx.lineTo(x, base + smooth(tau) + A * 0.22 * (vnoise(tau * 7 + i * 31) - 0.5));
-      }
-      ctx.globalAlpha = 0.55 * lineA; ctx.strokeStyle = INK; ctx.stroke();
-
-      // futuro (previsão): só a parte suave, em fantasma
-      ctx.beginPath();
-      for (let x = nowX; x <= W; x += 4) ctx.lineTo(x, base + smooth(tauAt(x)) + dev(x));
-      ctx.globalAlpha = 0.2 * lineA; ctx.strokeStyle = INK; ctx.stroke();
-      if (isDev && env > 0) { ctx.globalAlpha = 0.9 * env; ctx.strokeStyle = ACC; ctx.stroke(); }
-
-      // rótulo do sensor (ilustrativo)
-      if (!mob || i % 2 === 0) {
-        ctx.globalAlpha = 0.4 * lineA; ctx.fillStyle = INK;
-        if (isDev && env > 0) { ctx.globalAlpha = Math.max(0.4 * lineA, 0.95 * env); ctx.fillStyle = env > 0.3 ? ACC : INK; }
-        ctx.fillText(`S-${vgNum(i + 1)}`, mob ? 12 : 24, base - gap * 0.32);
-      }
-    }
-
-    // marcador NOW
-    ctx.globalAlpha = 0.4 * lineA; ctx.strokeStyle = INK; ctx.fillStyle = INK;
-    ctx.beginPath(); ctx.moveTo(nowX + 0.5, y0 - gap * 0.9); ctx.lineTo(nowX + 0.5, y1 + gap * 0.7); ctx.stroke();
-    ctx.globalAlpha = 0.6 * lineA;
-    ctx.textAlign = "center"; ctx.fillText("NOW", nowX, y0 - gap * 1.2);
-    ctx.globalAlpha = 0.35 * lineA;
-    ctx.textAlign = "right"; ctx.fillText("OBSERVED", nowX - (mob ? 26 : 34), y0 - gap * 1.2);
-    ctx.textAlign = "left"; ctx.fillText("FORECAST", nowX + (mob ? 26 : 34), y0 - gap * 1.2);
-    ctx.globalAlpha = 1;
-  }
-
-  // textos: a frase calma acompanha o desvio; depois o fecho e a marca
-  const lastTxt = {};
-  const setOp = (el, k, v, y) => {
-    if (!el) return;
-    const key = v.toFixed(3);
-    if (lastTxt[k] === key) return;
-    lastTxt[k] = key;
-    el.style.opacity = key;
-    el.style.transform = y ? `translateY(${((1 - v) * y).toFixed(1)}px)` : "";
-  };
-  function texts() {
-    if (reduce) { setOp(aviso, "a", 0); setOp(fecho, "f", 1); setOp(word, "w", 1); return; }
-    setOp(aviso, "a", seg(p, 0.62, 0.67) * (1 - seg(p, 0.75, 0.8)), 10);
-    setOp(fecho, "f", seg(p, 0.84, 0.89), 12);
-    setOp(word, "w", seg(p, 0.92, 0.98), 16);
-  }
-
-  // laço só enquanto a cena está na tela: as linhas correm devagar mesmo sem rolar
-  function loop(now) {
-    raf = 0;
-    if (!visible) return;
-    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0; last = now;
-    drift += dt * 0.15;
-    draw();
-    raf = requestAnimationFrame(loop);
-  }
-  const io = new IntersectionObserver(([e]) => {
-    visible = e.isIntersecting;
-    if (visible && !reduce && !raf) { last = 0; raf = requestAnimationFrame(loop); }
-  });
-  io.observe(sec);
-  const onResize = () => { size(); draw(); };
-  window.addEventListener("resize", onResize);
-  size(); texts(); draw();
-
-  return {
-    measure() { r = sec.getBoundingClientRect(); },
-    update() {
-      if (reduce || !r) return;
-      const np = Math.min(1, Math.max(0, -r.top / (r.height - window.innerHeight)));
-      if (np === p) return;
-      p = np;
-      texts();
-      if (!raf) draw();   // fora do laço (ex: só rolando), redesenha aqui
-    },
-    destroy() { cancelAnimationFrame(raf); io.disconnect(); window.removeEventListener("resize", onResize); }
   };
 }
