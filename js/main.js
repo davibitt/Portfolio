@@ -5,14 +5,11 @@ function projectGradient(p) {
 }
 
 function cardHtml(p, i) {
-  // alterna largo/estreito a cada linha: [largo | estreito], [estreito | largo]...
-  const rowEven = Math.floor(i / 2) % 2 === 0;
-  const sizeClass = rowEven === (i % 2 === 0) ? "is-large" : "is-normal";
   const bg = p.imagem ? `background-image:url('${p.imagem}');` : "";
   const video = p.capaVideo
     ? `<video class="card-video" src="${p.capaVideo}" muted loop playsinline preload="metadata" data-autoplay></video>` : "";
   return `
-    <a class="project-card ${sizeClass} reveal" href="project.html?id=${encodeURIComponent(p.id)}"
+    <a class="project-card reveal" href="project.html?id=${encodeURIComponent(p.id)}"
        style="--card-gradient:${projectGradient(p)};${bg}">
       ${video}
       <div class="card-top">

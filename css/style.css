@@ -213,7 +213,8 @@ h1, h2, h3 {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: clamp(340px, 38vw, 520px);
+  aspect-ratio: 4 / 3;
+  min-height: 320px; /* telas médias: espaço mínimo para o texto */
   overflow: hidden;
   isolation: isolate;
   background-size: cover;
@@ -221,10 +222,7 @@ h1, h2, h3 {
   border: 1px solid var(--border);
 }
 
-.project-card.is-large { grid-column: span 7; }
-.project-card.is-normal { grid-column: span 5; }
-/* último card sozinho na linha ocupa a largura toda (não deixa buraco no grid) */
-.project-card:last-child:nth-child(odd) { grid-column: 1 / -1; min-height: clamp(300px, 32vw, 460px); }
+/* todos os cards com o mesmo tamanho e proporção: nenhum projeto pesa mais que outro */
 
 .project-card::before {
   content: ""; position: absolute; inset: 0; z-index: -2;
@@ -265,7 +263,7 @@ h1, h2, h3 {
 }
 
 @media (max-width: 720px) {
-  .project-card, .project-card.is-large, .project-card.is-normal { grid-column: 1 / -1; min-height: 360px; }
+  .project-card { grid-column: 1 / -1; aspect-ratio: auto; min-height: 360px; }
 }
 
 /* =========================================================
@@ -988,6 +986,55 @@ a.service-row { color: inherit; }
 }
 .tl-video-cap { margin-top: 12px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; color: var(--t-soft); }
 .tl-video-cap::before { content: "▸ "; color: var(--t-accent); }
+
+/* animação do logo "longa exposição" (no lugar do vídeo) */
+.tl-take {
+  aspect-ratio: 16 / 9; background-color: #050505;
+  /* quadrícula fina, como na arte do símbolo */
+  background-image:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--t-fg) 5%, transparent) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, color-mix(in srgb, var(--t-fg) 5%, transparent) 0 1px, transparent 1px 64px);
+  background-position: center;
+}
+.tk-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.tk-src { fill: none; } /* invisível, mas medível (getBBox não funciona com display:none) */
+.tk-focus { fill: none; stroke: color-mix(in srgb, var(--t-fg) 70%, transparent); stroke-width: 1.4; opacity: 0; }
+.tk-trail { fill: var(--t-fg); opacity: 0; }
+.tk-mark, .tk-name, .tk-desc { fill: var(--t-fg); opacity: 0; }
+.tk-dot { fill: var(--t-accent); opacity: 0; }
+.tk-light { opacity: 0; }
+.tk-halo { color: var(--t-fg); }
+.tk-hud {
+  position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 16px;
+  padding: clamp(14px, 2vw, 26px) clamp(16px, 2.4vw, 32px);
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.1em; color: var(--t-soft); pointer-events: none;
+}
+.tk-state { display: inline-flex; gap: 8px; align-items: center; color: var(--t-fg); }
+.tk-state b { font-weight: 400; }
+.tk-state i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--t-soft); }
+.tl-take.is-rec .tk-state i { border-color: transparent; background: var(--t-accent); animation: rec-blink 1.2s steps(1) infinite; }
+.tl-take.is-saved .tk-state i { border-color: transparent; background: var(--t-fg); border-radius: 1px; }
+.tk-exp { margin-right: auto; }
+.tk-shutter { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.tk-ui {
+  position: absolute; left: clamp(16px, 2.4vw, 32px); right: clamp(16px, 2.4vw, 32px); bottom: clamp(12px, 1.8vw, 22px);
+  display: flex; align-items: center; gap: 16px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; color: var(--t-soft);
+}
+.tk-bar { flex: 1; height: 1px; background: var(--t-line); overflow: hidden; }
+.tk-bar i { display: block; height: 100%; background: var(--t-fg); transform: scaleX(0); transform-origin: left; }
+.tk-replay {
+  font: 500 0.7rem var(--font-mono); letter-spacing: 0.08em; color: var(--t-fg); background: none; cursor: pointer;
+  border: 1px solid var(--t-line); border-radius: 999px; padding: 6px 12px;
+  opacity: 0; pointer-events: none; transition: opacity 0.4s ease, background 0.2s ease;
+}
+.tl-take.is-done .tk-replay { opacity: 1; pointer-events: auto; }
+.tk-replay:hover { background: color-mix(in srgb, var(--t-fg) 10%, transparent); }
+@media (max-width: 720px) {
+  .tl-take { aspect-ratio: 4 / 5; }
+  .tk-hud { font-size: 0.62rem; }
+  .tk-ui { font-size: 0.62rem; gap: 10px; }
+  .tk-replay { padding: 4px 10px; font-size: 0.62rem; }
+}
 
 /* aplicações: campo livre, cada imagem num lugar e tamanho */
 .tl-scatter-head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 6vw, 96px); align-items: end; margin-bottom: clamp(64px, 9vw, 140px); }

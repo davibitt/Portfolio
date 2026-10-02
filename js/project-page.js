@@ -549,6 +549,7 @@ const TL_LAYOUTS = {
 
   "tl-video": (s, p, i) => {
     const m = (s.midias || [])[0] || {};
+    const V = s.animacao && typeof VETORES !== "undefined" && VETORES[p.logoVetor];
     return `
     <section class="tl-sec tl-video">
       <div class="wrap tl-split">
@@ -556,11 +557,12 @@ const TL_LAYOUTS = {
         <div class="tl-text reveal">${tlParas(s)}</div>
       </div>
       <div class="tl-viewfinder reveal">
+        ${V ? tlTakeHtml(V, p) : `
         ${tlMedia({ proporcao: "16/9", ...m, legenda: "" })}
         <div class="tl-hud" aria-hidden="true">
           <span class="tl-rec-live"><i></i>REC</span>
           <span data-timecode>00:00:00:00</span>
-        </div>
+        </div>`}
         <p class="wrap tl-video-cap">${m.legenda || ""}</p>
       </div>
     </section>`;
@@ -739,13 +741,259 @@ function setupTimeline(root) {
   build();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measureScrub(); update(); });
   const unpauseFluid = pauseFluidUnder(art);
+  const takeEl = art.querySelector("[data-tl-take]");
+  const takeOff = takeEl ? tlTake(takeEl, reduce) : null;
   window.__tlCleanup = () => {
     window.removeEventListener("scroll", onScroll);
     ro.disconnect();
     if (timer) clearInterval(timer);
     unpauseFluid();
+    if (takeOff) takeOff();
     window.__tlCleanup = null;
   };
+}
+
+/* ---------- animação do logo: "longa exposição" (seção tl-video com animacao) ----------
+   Um ponto de luz percorre o W como num light painting: anda devagar onde o traço é grosso e
+   rápido onde é fino (a espessura vira luz acumulada no tempo). No fim do traço o ponto para e
+   fica vermelho (REC); o obturador fecha, a "foto revelada" é o vetor do logo, e o nome entra
+   com um ajuste de foco. Usa VETORES[logoVetor] (simbolo, ponto, nome, descritor). */
+function tlTakeHtml(V, p) {
+  const [dx, dy, dr] = V.ponto;
+  return `
+        <figure class="tl-fig tl-take-fig">
+          <div class="tl-frame tl-take" data-tl-take data-dot="${dx} ${dy} ${dr}">
+            <svg class="tk-svg" role="img" aria-label="${p.titulo} — logo animation">
+              <defs>
+                <filter id="tkGlow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="4" result="b"/>
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="b2"/>
+                  <feMerge><feMergeNode in="b2"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="tkFocusN" x="-10%" y="-80%" width="120%" height="260%"><feGaussianBlur stdDeviation="0"/></filter>
+                <filter id="tkFocusD" x="-10%" y="-150%" width="120%" height="400%"><feGaussianBlur stdDeviation="0"/></filter>
+                <radialGradient id="tkHalo">
+                  <stop offset="0" stop-color="currentColor" stop-opacity="0.85"/>
+                  <stop offset="0.3" stop-color="currentColor" stop-opacity="0.22"/>
+                  <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <path class="tk-src" d="${V.simbolo}"/>
+              <g class="tk-focus"></g>
+              <path class="tk-trail" filter="url(#tkGlow)"/>
+              <path class="tk-mark" d="${V.simbolo}"/>
+              <circle class="tk-dot" cx="${dx}" cy="${dy}" r="${dr}"/>
+              <g class="tk-light"><circle class="tk-halo" r="26" fill="url(#tkHalo)"/><circle class="tk-core" r="3"/></g>
+              <g class="tk-name" filter="url(#tkFocusN)"><path d="${V.nome}"/></g>
+              <g class="tk-desc" filter="url(#tkFocusD)"><path d="${V.descritor}"/></g>
+            </svg>
+            <div class="tk-hud" aria-hidden="true">
+              <span class="tk-state"><i></i><b>STBY</b></span>
+              <span class="tk-exp"></span>
+              <span class="tk-tc">00:00:00:00</span>
+            </div>
+            <div class="tk-shutter" aria-hidden="true"></div>
+            <div class="tk-ui">
+              <span class="tk-take-n">TAKE 01</span>
+              <span class="tk-bar"><i></i></span>
+              <button class="tk-replay" type="button" aria-label="Replay animation">↺ Replay</button>
+            </div>
+          </div>
+        </figure>`;
+}
+
+// path SVG (M/L/H/V/C/S/Z, absolutos ou relativos) -> polilinha [[x, y], ...] do primeiro contorno.
+// (bem mais rápido que getPointAtLength, que trava a página em paths longos)
+function tlFlatten(d) {
+  const tk = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [];
+  const out = []; let i = 0, cmd = "", x = 0, y = 0, sx = 0, sy = 0, cx = 0, cy = 0;
+  const num = () => parseFloat(tk[i++]);
+  const cubic = (x1, y1, x2, y2, x3, y3) => {
+    for (let k = 1; k <= 12; k++) {
+      const t = k / 12, u = 1 - t;
+      out.push([u * u * u * x + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3, u * u * u * y + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3]);
+    }
+    cx = x2; cy = y2; x = x3; y = y3;
+  };
+  while (i < tk.length) {
+    if (/[a-zA-Z]/.test(tk[i])) cmd = tk[i++];
+    const rel = cmd === cmd.toLowerCase(), ox = rel ? x : 0, oy = rel ? y : 0, c = cmd.toUpperCase();
+    if (c === "Z") { break; }                                  // só o primeiro contorno
+    if (c === "M") { x = ox + num(); y = oy + num(); sx = x; sy = y; out.push([x, y]); cmd = rel ? "l" : "L"; cx = x; cy = y; }
+    else if (c === "L") { x = ox + num(); y = oy + num(); out.push([x, y]); cx = x; cy = y; }
+    else if (c === "H") { x = ox + num(); out.push([x, y]); cx = x; cy = y; }
+    else if (c === "V") { y = oy + num(); out.push([x, y]); cx = x; cy = y; }
+    else if (c === "C") { const a = [num(), num(), num(), num(), num(), num()]; cubic(ox + a[0], oy + a[1], ox + a[2], oy + a[3], ox + a[4], oy + a[5]); }
+    else if (c === "S") { const a = [num(), num(), num(), num()]; cubic(2 * x - cx, 2 * y - cy, ox + a[0], oy + a[1], ox + a[2], oy + a[3]); }
+    else { i++; }
+  }
+  return out;
+}
+
+function tlTake(el, reduce) {
+  const svg = el.querySelector(".tk-svg"), q = (c) => el.querySelector(c);
+  const src = q(".tk-src"), trail = q(".tk-trail"), mark = q(".tk-mark"), dot = q(".tk-dot");
+  const light = q(".tk-light"), core = q(".tk-core"), halo = q(".tk-halo"), focus = q(".tk-focus");
+  const name = q(".tk-name"), desc = q(".tk-desc");
+  const blurN = q("#tkFocusN feGaussianBlur"), blurD = q("#tkFocusD feGaussianBlur");
+  const stateB = q(".tk-state b"), exp = q(".tk-exp"), tc = q(".tk-tc"), shutter = q(".tk-shutter");
+  const bar = q(".tk-bar i"), btn = q(".tk-replay");
+  const [dotX, dotY, dotR] = el.dataset.dot.split(" ").map(Number);   // o dot do logo
+
+  // --- o W é um contorno fechado: separa os dois lados (da ponta esquerda à direita) e acha a linha central ---
+  const raw = tlFlatten(src.getAttribute("d")), N = raw.length;
+  let iL = 0, iR = 0;
+  raw.forEach((pt, k) => { if (pt[0] < raw[iL][0]) iL = k; if (pt[0] > raw[iR][0]) iR = k; });
+  const walk = (dir) => { const out = []; for (let k = iL; ; k = (k + dir + N) % N) { out.push(raw[k]); if (k === iR) break; } return out; };
+  const M = 420;
+  const resample = (P) => {
+    const d = [0]; for (let k = 1; k < P.length; k++) d.push(d[k - 1] + Math.hypot(P[k][0] - P[k - 1][0], P[k][1] - P[k - 1][1]));
+    const out = []; let j = 0;
+    for (let k = 0; k < M; k++) {
+      const t = (d[d.length - 1] * k) / (M - 1);
+      while (j < d.length - 2 && d[j + 1] < t) j++;
+      const f = (t - d[j]) / Math.max(1e-6, d[j + 1] - d[j]);
+      out.push([P[j][0] + (P[j + 1][0] - P[j][0]) * f, P[j][1] + (P[j + 1][1] - P[j][1]) * f]);
+    }
+    return out;
+  };
+  const A = resample(walk(1)), B = resample(walk(-1));
+  // liga cada ponto de um lado ao do outro lado (alinhamento ótimo, sem voltar: os lados têm comprimentos diferentes
+  // nas curvas). Cada ligação ("degrau") é uma fatia do traço: R = [[i de A, j de B], ...]
+  const dist = (i, j) => Math.hypot(A[i][0] - B[j][0], A[i][1] - B[j][1]);
+  const cost = new Float64Array(M * M), from = new Uint8Array(M * M);
+  for (let i = 0; i < M; i++) for (let j = 0; j < M; j++) {
+    const d = dist(i, j), id = i * M + j;
+    if (!i && !j) { cost[id] = d; continue; }
+    let best = Infinity, f = 0;
+    if (i && j && cost[id - M - 1] < best) { best = cost[id - M - 1]; f = 0; }
+    if (i && cost[id - M] < best) { best = cost[id - M]; f = 1; }
+    if (j && cost[id - 1] < best) { best = cost[id - 1]; f = 2; }
+    cost[id] = best + d; from[id] = f;
+  }
+  const R = [];
+  for (let i = M - 1, j = M - 1; ; ) {
+    R.push([i, j]); if (!i && !j) break;
+    const f = from[i * M + j]; if (f === 0) { i--; j--; } else if (f === 1) i--; else j--;
+  }
+  R.reverse();
+  const K = R.length;
+  const C = R.map(([i, j]) => [(A[i][0] + B[j][0]) / 2, (A[i][1] + B[j][1]) / 2]);   // linha central
+  const Wd = R.map(([i, j]) => dist(i, j));                                          // espessura
+  // tempo de exposição: o ponto demora mais onde o traço é grosso
+  const T = [0];
+  for (let k = 1; k < K; k++) T.push(T[k - 1] + Math.hypot(C[k][0] - C[k - 1][0], C[k][1] - C[k - 1][1]) * (Wd[k] + 3.5));
+  const Ttot = T[K - 1];
+  const atTime = (f) => {   // fração do tempo de exposição -> degrau (fracionário) ao longo do traço
+    const t = f * Ttot; let lo = 0, hi = K - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (T[mid] < t) lo = mid; else hi = mid; }
+    return lo + (t - T[lo]) / Math.max(1e-6, T[hi] - T[lo]);
+  };
+  const pts = (P) => P.map((v) => v[0].toFixed(2) + " " + v[1].toFixed(2)).join(" L");
+  function ribbon(u) {   // pedaço do W já "exposto", da ponta esquerda até o degrau u (frente arredondada pela luz)
+    const k = Math.min(K - 1, Math.floor(u)), [i, j] = R[k];
+    const a = A.slice(0, i + 1), b = B.slice(0, j + 1).reverse();
+    return "M" + pts(a) + " L" + pts(b) + "Z";
+  }
+
+  // --- enquadramento: o logo inteiro, com folga; no celular ocupa mais a largura ---
+  const box = (() => { const a = src.getBBox(), n = name.getBBox(), d = desc.getBBox();
+    const x0 = Math.min(a.x, n.x, d.x), y0 = Math.min(a.y, n.y, d.y);
+    return { x0, y0, x1: Math.max(a.x + a.width, n.x + n.width, d.x + d.width), y1: Math.max(a.y + a.height, n.y + n.height, d.y + d.height), sym: a }; })();
+  function frame() {
+    const w = el.clientWidth || 1, h = el.clientHeight || 1;
+    const vw = (box.x1 - box.x0) / (w < 720 ? 0.84 : 0.5), vh = (vw * h) / w;
+    const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+    svg.setAttribute("viewBox", `${(cx - vw / 2).toFixed(1)} ${(cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+  }
+  // marcas de foco em volta do símbolo
+  const s = box.sym, fx = s.x - 22, fy = s.y - 22, fw = s.width + 44, fh = s.height + 44, c = 16;
+  focus.innerHTML = [[fx, fy, 1, 1], [fx + fw, fy, -1, 1], [fx, fy + fh, 1, -1], [fx + fw, fy + fh, -1, -1]]
+    .map(([x, y, sx, sy]) => `<path d="M${x} ${y + c * sy} V${y} H${x + c * sx}"/>`).join("");
+
+  // --- linha do tempo (segundos) ---
+  const P0 = 1.3, P1 = 5.6;          // exposição: o ponto de luz percorre o W
+  const DOT0 = 5.6, DOT1 = 6.4;      // o ponto para e vira o REC
+  const SH = 6.75;                   // obturador
+  const N0 = 7.2, D0 = 7.9;          // nome e descritor entram em foco
+  const DUR = 9.6;
+  const ease = LY_EASE, clamp = lyClamp, seg = (t, a, b) => clamp((t - a) / (b - a));
+  const pad = (n) => String(n).padStart(2, "0");
+  const tcOf = (sec) => { const f = Math.max(0, Math.floor(sec * 24)); return `00:00:${pad(Math.floor(f / 24) % 60)}:${pad(f % 24)}`; };
+
+  function render(t) {
+    // 1. standby: as marcas de foco fecham sobre o símbolo e somem quando a exposição começa
+    const lock = ease(seg(t, 0.2, 1.0));
+    focus.style.opacity = (seg(t, 0.1, 0.4) * (1 - seg(t, P0, P0 + 0.4))).toFixed(3);
+    const fcx = box.sym.x + box.sym.width / 2, fcy = box.sym.y + box.sym.height / 2;
+    focus.setAttribute("transform", `translate(${fcx} ${fcy}) scale(${(1.35 - 0.35 * lock).toFixed(4)}) translate(${-fcx} ${-fcy})`);
+
+    // 2. exposição
+    const e = seg(t, P0, P1);
+    const developed = t >= SH + 0.06;
+    if (t >= P0 && !developed) {
+      trail.setAttribute("d", ribbon(Math.max(0.001, atTime(e))));
+      trail.style.opacity = 1;
+    } else if (developed) {
+      trail.style.opacity = (0.9 * (1 - seg(t, SH + 0.06, SH + 1.1))).toFixed(3);   // rastro de luz que ainda resta na retina
+      if (t < SH + 1.2) trail.setAttribute("d", ribbon(K - 1));
+    } else trail.style.opacity = 0;
+
+    // ponto de luz: segue a linha central; no fim, sobe até o lugar do dot e fica vermelho
+    let lx, ly, lr = 3, hr = 26, red = 0;
+    if (t < DOT0) {
+      const k = Math.min(K - 1, atTime(e)), i0 = Math.floor(k), i1 = Math.min(K - 1, i0 + 1), f = k - i0;
+      lx = C[i0][0] + (C[i1][0] - C[i0][0]) * f; ly = C[i0][1] + (C[i1][1] - C[i0][1]) * f;
+      // a cabeça de luz acompanha a espessura do traço (e cobre a frente do rastro)
+      const wk = Wd[i0], end = seg(t, P1 - 0.25, P1);
+      lr = 3 + (Math.max(3, wk * 0.42) - 3) * (1 - end); hr = 26 + (14 + wk * 1.5 - 26) * (1 - end);
+    } else {
+      const m = seg(t, DOT0, DOT1), em = ease(m);
+      const tip = C[K - 1];
+      const lift = Math.sin(Math.PI * Math.min(1, m * 1.15)) * 7;   // pequeno salto antes de assentar
+      lx = tip[0] + (dotX - tip[0]) * em; ly = tip[1] + (dotY - tip[1]) * em - lift * (1 - em);
+      lr = 3 + (dotR - 3) * em; red = ease(seg(t, DOT0 + 0.15, DOT1));
+    }
+    const lightOn = t >= P0 - 0.25 && !developed;
+    light.style.opacity = lightOn ? Math.min(1, seg(t, P0 - 0.25, P0 + 0.1)).toFixed(3) : 0;
+    light.setAttribute("transform", `translate(${lx.toFixed(2)} ${ly.toFixed(2)})`);
+    core.setAttribute("r", lr.toFixed(2));
+    const col = `color-mix(in srgb, var(--t-accent) ${Math.round(red * 100)}%, var(--t-fg))`;
+    core.style.fill = col; halo.style.color = col;
+    halo.setAttribute("r", (hr * (1 + 0.08 * Math.sin(t * 9))).toFixed(1));
+
+    // 3. obturador: corte preto rápido e a "foto revelada"
+    shutter.style.opacity = t >= SH && t < SH + 0.35 ? (1 - seg(t, SH + 0.1, SH + 0.35)).toFixed(3) : 0;
+    mark.style.opacity = developed ? 1 : 0;
+    dot.style.opacity = developed ? 1 : 0;
+
+    // 4. o nome entra em foco
+    const n = ease(seg(t, N0, N0 + 1.3)), d = ease(seg(t, D0, D0 + 1.2));
+    name.style.opacity = Math.min(1, n * 1.6).toFixed(3); blurN.setAttribute("stdDeviation", (10 * (1 - n)).toFixed(2));
+    desc.style.opacity = Math.min(1, d * 1.6).toFixed(3); blurD.setAttribute("stdDeviation", (7 * (1 - d)).toFixed(2));
+
+    // HUD
+    const done = t >= DUR - 0.4;
+    el.classList.toggle("is-rec", t >= DOT1 - 0.2 && !done);
+    el.classList.toggle("is-saved", done);
+    el.classList.toggle("is-done", t >= DUR);
+    stateB.textContent = done ? "SAVED" : t >= DOT1 - 0.2 ? "REC" : t >= P0 ? "BULB" : "STBY";
+    exp.textContent = t >= P0 && t < SH ? `EXP ${(t - P0).toFixed(1)}s` : t >= SH ? `EXP ${(SH - P0).toFixed(1)}s` : "";
+    tc.textContent = tcOf(t - P0);
+    bar.style.transform = `scaleX(${clamp(t / DUR).toFixed(4)})`;
+  }
+
+  let raf = 0, t0 = 0;
+  function step(now) { const t = (now - t0) / 1000; render(t); raf = t < DUR ? requestAnimationFrame(step) : 0; }
+  function play() { cancelAnimationFrame(raf); if (reduce) return render(DUR); t0 = performance.now(); raf = requestAnimationFrame(step); }
+  frame();
+  render(reduce ? DUR : 0);
+  let played = false;
+  const io = new IntersectionObserver(([en]) => { if (en.isIntersecting && !played) { played = true; play(); } }, { threshold: 0.6 });
+  io.observe(el);
+  btn.addEventListener("click", play);
+  const ro = new ResizeObserver(frame); ro.observe(el);
+  return () => { cancelAnimationFrame(raf); io.disconnect(); ro.disconnect(); };
 }
 
 /* =========================================================

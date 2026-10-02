@@ -69,7 +69,7 @@ tools/              Scripts que geraram vetores (ver seção 6). Não fazem part
   - No shader do mapa NOMAD, o terreno "difícil" só é calculado com `uSweep > -0.5` (antes disso ele é invisível).
   - Handlers de rolagem: fazer **todas as leituras** (`getBoundingClientRect`, `offsetHeight`) **antes das escritas** no DOM e não reescrever texto igual (ver `setH`/`setG`, `measure()`/`update()` no NOMAD).
   - Imagem de capa dos cases: `fetchpriority="high"`, sem `loading="lazy"` (parâmetro `eager` de `caseMedia`/`tlMedia`/`exMedia`).
-- **Grid da home/Work:** tamanhos automáticos (largo/estreito); último card ímpar ocupa a largura toda.
+- **Grid da home/Work:** todos os cards com o mesmo tamanho (2 por linha, proporção 4/3; pedido do Davi: nenhum projeto pesa mais). Último card ímpar fica sozinho à esquerda.
 - **Acentos em `projects.js`:** ao editar via script, normalizar com `unicodedata.normalize("NFC", ...)`.
 
 ### Visual global
@@ -103,7 +103,9 @@ Seções, em ordem (`secoes` no `projects.js`):
 **Conceito:** o símbolo é uma linha do tempo capturada; W orgânico como um momento sendo gravado; círculo do REC no fim.
 **Layout:** linha SVG orgânica desenhada com a rolagem, terminando num ponto vermelho que pisca; seções numeradas por timecode; ficha em forma de claquete; imagens sem borda com marcas de visor, num grid de 12 colunas **sem sobreposição** (ele reclamou de imagens "jogadas"); cores em círculos; vídeo com HUD de câmera; cena **"gravando o nome"** (`tl-scrub`), que ele adorou.
 **Fontes:** Fraunces + Work Sans. **Vermelho do REC `#E0352B`: DECIDIDO, é da marca** (manter).
-**Pendente:** só as imagens (capa, 2 Concept, 2 Symbol, vídeo da animação do logo, 6 Applications) e nomes reais das aplicações, HEX oficiais (usei `#000000`/`#FFFFFF`), ano. **Não alterar nada até as imagens chegarem.**
+**Imagens:** em `assets/wilker/` (capa = topo do case; card = álbum, provisório; Concept: álbum + tela; Symbol: construção + detalhe). `wilker-logo.svg` = logo original em vetor, convertido em `VETORES.wilker` (simbolo, ponto, nome, descritor).
+**Animação do logo "longa exposição"** (seção Motion, `animacao: "longa-exposicao"`; `tlTakeHtml`/`tlTake` em `project-page.js`): light painting — um ponto de luz percorre o W, devagar onde o traço é grosso (a espessura = luz acumulada); no fim sobe e vira o dot vermelho (REC); obturador (corte preto); o vetor nítido aparece e o nome entra com ajuste de foco (blur → nítido). HUD: STBY → BULB/EXP → REC → SAVED · TAKE 01. Linha central calculada em tempo real: `tlFlatten` lê o path (não usar `getPointAtLength`: 675 ms) e um alinhamento DTW pareia os dois lados do contorno (pareamento por janela falhava nas curvas de baixo). Toca ao aparecer, com Replay.
+**Pendente:** 6 mockups de Applications com nomes reais; HEX oficiais (usei `#000000`/`#FFFFFF`); ano. Card da home usa o álbum por enquanto (o nome escrito na capa colidia com o título do card); trocar se ele mandar uma capa sem o logo.
 Frases interpretadas por mim (marcar se ele perguntar): "moments taken out of time — and kept"; "stops being just seen and starts being kept"; "keeping the attention on the mark and on Wilker's images".
 Sugestão feita e ainda não pedida: uma "folha de contato" com as fotos dele (sequência numerada, marcações a lápis de cera).
 
