@@ -13,6 +13,8 @@
     descricao   -> texto mais completo (aparece na página do projeto)
     ferramentas -> array de strings, ex: ["Illustrator", "Figma"]
     imagem      -> caminho da imagem de capa (coloque o arquivo em /assets). Vazio = usa o gradiente.
+    posicaoCard -> (opcional) enquadramento da imagem no card, ex: "0% 50%" (esquerda), "50% 30%"
+    posicaoCardMenor -> (opcional) o mesmo, para telas até 1000px (o card fica quase quadrado)
     galeria     -> imagens ou vídeos extras do case simples, ex: ["assets/cliente1-01.jpg", "assets/cliente1-02.mp4"]
                    A 1ª aparece larga; as demais em duas colunas. Vazio = mostra espaços de exemplo.
     gradiente   -> cor(es) do overlay do card enquanto não tem imagem real.
@@ -214,8 +216,10 @@ const TODOS_PROJETOS = [
       { label: "Tools", valor: "Adobe Photoshop, Adobe Illustrator" }
     ],
     ferramentas: ["Adobe Photoshop", "Adobe Illustrator"],
-    // card da home: o álbum, por enquanto (a capa tem o nome escrito e colide com o título do card). TROCAR por uma capa sem o logo
-    imagem: "assets/wilker/wilker-photo-album.jpg",
+    // card da home: camisa bordada (a capa do case tem o nome escrito, que colidia com o título do card)
+    imagem: "assets/wilker/wilker-card.jpg",
+    posicaoCard: "0% 50%",        // desktop: alinha pela esquerda, o W bordado fica longe do título do card
+    posicaoCardMenor: "65% 50%",  // tablet/celular: o card fica quase quadrado; puxa o W para dentro
     gradiente: ["#0B0B0B", "#3A3A3A"],
     linkDemo: "",
     // destaque = cor do REC. O vermelho ainda não está definido na marca:

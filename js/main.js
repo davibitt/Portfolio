@@ -5,7 +5,8 @@ function projectGradient(p) {
 }
 
 function cardHtml(p, i) {
-  const bg = p.imagem ? `background-image:url('${p.imagem}');` : "";
+  const bg = p.imagem ? `background-image:url('${p.imagem}');`
+    + (p.posicaoCard ? `--card-pos:${p.posicaoCard};` : "") + (p.posicaoCardMenor ? `--card-pos-sm:${p.posicaoCardMenor};` : "") : "";
   const video = p.capaVideo
     ? `<video class="card-video" src="${p.capaVideo}" muted loop playsinline preload="metadata" data-autoplay></video>` : "";
   return `

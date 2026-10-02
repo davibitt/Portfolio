@@ -201,7 +201,7 @@ h1, h2, h3 {
    ========================================================= */
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: clamp(16px, 2vw, 24px);
 }
 
@@ -215,12 +215,15 @@ h1, h2, h3 {
   justify-content: space-between;
   aspect-ratio: 4 / 3;
   min-height: 320px; /* telas médias: espaço mínimo para o texto */
+  width: 100%;       /* com aspect-ratio o card não estica sozinho: calcularia a largura pela altura mínima e vazaria do grid */
   overflow: hidden;
   isolation: isolate;
   background-size: cover;
-  background-position: center;
+  background-position: var(--card-pos, center);
   border: 1px solid var(--border);
 }
+/* telas menores: o card fica quase quadrado e pode pedir outro enquadramento (posicaoCardMenor) */
+@media (max-width: 1000px) { .project-card { background-position: var(--card-pos-sm, var(--card-pos, center)); } }
 
 /* todos os cards com o mesmo tamanho e proporção: nenhum projeto pesa mais que outro */
 
