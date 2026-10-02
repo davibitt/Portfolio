@@ -458,22 +458,121 @@ const TL_LAYOUTS = {
         <h2 class="tl-display reveal">${s.titulo}</h2>
         <div class="tl-text tl-offset reveal">${tlParas(s)}</div>
       </div>
-      <div class="wrap tl-row tl-row-concept">
-        ${tlMedia(m[0], "tl-c-main")}
-        ${m[1] ? tlMedia(m[1], "tl-c-detail") : ""}
+      <div class="tl-dip">
+        ${tlMedia(m[0], "tl-dip-a")}
+        ${m[1] ? tlMedia(m[1], "tl-dip-b") : ""}
       </div>
     </section>`;
   },
 
+  // símbolo: texto, depois as imagens em tela cheia, uma "pousando" sobre a outra como fotos numa pilha
   "tl-feature": (s, p, i) => {
     const m = s.midias || [];
     return `
     <section class="tl-sec tl-feature">
-      <div class="wrap tl-feature-grid">
-        <div class="tl-feature-text reveal">${tlLabel(s, i)}<h2 class="tl-h2">${s.titulo}</h2><div class="tl-text">${tlParas(s)}</div></div>
-        ${tlMedia(m[0], "tl-feature-main")}
+      <div class="wrap tl-split">
+        <div class="reveal">${tlLabel(s, i)}<h2 class="tl-h2">${s.titulo}</h2></div>
+        <div class="tl-text reveal">${tlParas(s)}</div>
       </div>
-      ${m[1] ? `<div class="wrap tl-row">${tlMedia(m[1], "tl-f-detail")}</div>` : ""}
+      <div class="tl-stack">${m.map((x) => tlMedia(x, "tl-stack-fig")).join("")}</div>
+    </section>`;
+  },
+
+  // versões da marca: palco em tela cheia; a agulha (linha + ponto REC) varre a tela e revela a próxima
+  // versão, como negativo e positivo. Desenhado ao vivo a partir de VETORES[logoVetor].
+  "tl-versions": (s, p, i) => {
+    const V = typeof VETORES !== "undefined" && VETORES[p.logoVetor];
+    const vs = s.versoes || [];
+    const box = { completo: "120 400 805 300", simbolo: "380 404 294 160" };   // recortes medidos do logo (1080x1080)
+    const logo = (v) => V ? `
+      <svg class="tv-logo is-${v.mostra || "completo"}" viewBox="${box[v.mostra] || box.completo}" role="img" aria-label="${p.titulo} — ${v.nome}">
+        <use href="#tv-simbolo" fill="${v.tinta}"/>
+        <circle cx="${V.ponto[0]}" cy="${V.ponto[1]}" r="${V.ponto[2]}" fill="${v.ponto || v.tinta}"/>
+        ${v.mostra === "simbolo" ? "" : `<use href="#tv-nome" fill="${v.tinta}"/><use href="#tv-descritor" fill="${v.tinta}"/>`}
+      </svg>` : `<div class="tl-ph"><span>awaiting logo</span></div>`;
+    return `
+    <section class="tl-sec tl-versions-sec">
+      <div class="wrap tl-split">
+        <div class="reveal">${tlLabel(s, i)}<h2 class="tl-display">${s.titulo}</h2></div>
+        <div class="tl-text reveal">${tlParas(s)}</div>
+      </div>
+      ${V ? `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+        <path id="tv-simbolo" d="${V.simbolo}"/><path id="tv-nome" d="${V.nome}"/><path id="tv-descritor" d="${V.descritor}"/>
+      </defs></svg>` : ""}
+      <div class="tl-versions" data-tl-versions style="--n:${vs.length}">
+        <div class="tv-sticky">
+          ${vs.map((v, k) => `
+          <div class="tv-panel" style="--pb:${v.fundo};--pi:${v.tinta}">
+            ${logo(v)}
+            <p class="tv-cap"><span>V—${String(k + 1).padStart(2, "0")}</span>${v.nome}<em>${v.fundo} / ${v.tinta}</em></p>
+          </div>`).join("")}
+          <div class="tv-head" aria-hidden="true"><span></span></div>
+          <p class="tv-count" aria-hidden="true">VERSION <b>01</b> / ${String(vs.length).padStart(2, "0")}</p>
+        </div>
+      </div>
+    </section>`;
+  },
+
+  // pattern: o símbolo repetido como numa longa exposição; cada faixa corre num sentido com a rolagem
+  "tl-pattern": (s, p, i) => {
+    const V = typeof VETORES !== "undefined" && VETORES[p.logoVetor];
+    const fg = (p.tema && p.tema.texto) || "#F2F1EE", acc = (p.tema && p.tema.destaque) || "#E0352B";
+    let tile = "";
+    if (V) {
+      // 7 "tomadas" do W, cada uma mais nítida que a anterior; o ponto REC só na última
+      const ops = [0.07, 0.12, 0.2, 0.34, 1];
+      const g = ops.map((o, k) => `<path transform="translate(${k * 62} 0)" fill="${fg}" fill-opacity="${o}" d="${V.simbolo}"/>`).join("")
+        + `<circle cx="${V.ponto[0] + 248}" cy="${V.ponto[1]}" r="${V.ponto[2]}" fill="${acc}"/>`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="380 404 760 160">${g}</svg>`;
+      tile = `url('data:image/svg+xml,${encodeURIComponent(svg)}')`;
+    }
+    const rows = Array.from({ length: 7 }, (_, k) => `<div class="tp-row" data-dir="${k % 2 ? -1 : 1}" style="--o:${(k * 137) % 400}px"></div>`).join("");
+    return `
+    <section class="tl-sec tl-pattern-sec">
+      <div class="wrap tl-split">
+        <div class="reveal">${tlLabel(s, i)}<h2 class="tl-h2">${s.titulo}</h2></div>
+        <div class="tl-text reveal">${tlParas(s)}</div>
+      </div>
+      <div class="tl-pattern" data-tl-pattern style="--tile:${tile}" role="img" aria-label="${s.legenda || "Pattern"}">${rows}</div>
+      ${s.legenda ? `<p class="wrap tl-video-cap">${s.legenda}</p>` : ""}
+    </section>`;
+  },
+
+  // aplicações: projetor — cada aplicação em tela cheia, trocada com um corte de obturador;
+  // um item com "dupla" divide a tela entre duas imagens
+  "tl-reel": (s, p, i) => {
+    const m = s.midias || [];
+    const one = (x) => {
+      if (!x) return "";
+      const pos = x.posicao ? ` style="object-position:${x.posicao}"` : "";
+      if (x.video) return `<video src="${x.video}"${x.poster ? ` poster="${x.poster}"` : ""} muted loop playsinline preload="metadata" data-autoplay${pos}></video>`;
+      if (x.img) return `<img src="${x.img}" alt="${x.legenda || ""}" loading="lazy"${pos}>`;
+      return `<div class="tl-ph"><span>awaiting image — ${x.legenda || ""}</span></div>`;
+    };
+    const cap = (x) => x.dupla ? x.dupla.map((d) => d.legenda).filter(Boolean).join(" / ") : (x.legenda || "");
+    return `
+    <section class="tl-sec tl-reel-sec">
+      <div class="wrap tl-split">
+        <div class="reveal">${tlLabel(s, i)}<h2 class="tl-display">${s.titulo}</h2></div>
+        <div class="tl-text reveal">${tlParas(s)}</div>
+      </div>
+      <div class="tl-reel" data-tl-reel style="--n:${m.length}">
+        <div class="tr-sticky">
+          ${m.map((x, k) => `
+          <figure class="tr-frame${x.dupla ? " is-dupla" : ""}${k === 0 ? " is-on" : ""}" data-cap="${cap(x).replace(/"/g, "")}">
+            ${x.dupla ? x.dupla.map((d) => `<div class="tr-half">${one(d)}</div>`).join("") : one(x)}
+          </figure>`).join("")}
+          <div class="tr-shutter" aria-hidden="true"></div>
+          <div class="tr-hud" aria-hidden="true">
+            <span class="tl-rec-live"><i></i>PLAY</span>
+            <span>FRAME <b class="tr-n">01</b> / ${String(m.length).padStart(2, "0")}</span>
+          </div>
+          <div class="tr-foot">
+            <p class="tr-cap">${cap(m[0] || {})}</p>
+            <div class="tr-strip" aria-hidden="true">${m.map((_, k) => `<i${k === 0 ? ` class="on"` : ""}></i>`).join("")}</div>
+          </div>
+        </div>
+      </div>
     </section>`;
   },
 
@@ -743,14 +842,83 @@ function setupTimeline(root) {
   const unpauseFluid = pauseFluidUnder(art);
   const takeEl = art.querySelector("[data-tl-take]");
   const takeOff = takeEl ? tlTake(takeEl, reduce) : null;
+  const scenesOff = tlScenes(art, reduce);
   window.__tlCleanup = () => {
     window.removeEventListener("scroll", onScroll);
     ro.disconnect();
     if (timer) clearInterval(timer);
     unpauseFluid();
     if (takeOff) takeOff();
+    scenesOff();
     window.__tlCleanup = null;
   };
+}
+
+// progresso (0..1) de uma seção com palco sticky: 0 quando o topo chega ao topo da tela, 1 no fim
+const stickyP = (r, ih) => Math.min(1, Math.max(0, -r.top / Math.max(1, r.height - ih)));
+const smooth01 = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
+
+// cenas de rolagem do Wilker: versões (agulha que revela), pattern (faixas correndo) e projetor (aplicações)
+function tlScenes(art, reduce) {
+  const ver = art.querySelector("[data-tl-versions]");
+  const pat = art.querySelector("[data-tl-pattern]");
+  const reel = art.querySelector("[data-tl-reel]");
+  if (reduce || (!ver && !pat && !reel)) return () => {};
+  const vPanels = ver ? [...ver.querySelectorAll(".tv-panel")] : [];
+  const vHead = ver && ver.querySelector(".tv-head");
+  const vCount = ver && ver.querySelector(".tv-count b");
+  const rows = pat ? [...pat.querySelectorAll(".tp-row")] : [];
+  const frames = reel ? [...reel.querySelectorAll(".tr-frame")] : [];
+  const ticks = reel ? [...reel.querySelectorAll(".tr-strip i")] : [];
+  let cur = 0, lastV = "", lastHead = "", lastPat = "";
+  function update() {
+    ticking = false;
+    const ih = window.innerHeight;
+    const rv = ver && ver.getBoundingClientRect();
+    const rp = pat && pat.getBoundingClientRect();
+    const rr = reel && reel.getBoundingClientRect();
+    if (rv && rv.bottom > 0 && rv.top < ih) {
+      // cada troca ocupa 60% de um trecho; o resto é pausa na versão
+      const u = stickyP(rv, ih) * (vPanels.length - 1);
+      let head = -1, shown = 0;
+      vPanels.forEach((el, k) => {
+        if (!k) return;
+        const r = smooth01((u - (k - 1) - 0.2) / 0.6);
+        if (r > 0.004 && r < 0.996) head = 1 - r;
+        if (r >= 0.5) shown = k;
+        el.style.clipPath = `inset(0 0 0 ${((1 - r) * 100).toFixed(2)}%)`;
+      });
+      const hs = head < 0 ? "" : `${(head * 100).toFixed(2)}%`;
+      if (hs !== lastHead) { lastHead = hs; vHead.style.left = hs || "-10%"; }
+      const n = String(shown + 1).padStart(2, "0");
+      if (n !== lastV) { lastV = n; vCount.textContent = n; }
+    }
+    if (rp && rp.bottom > 0 && rp.top < ih) {
+      const t = ((rp.top + rp.height / 2 - ih / 2) / ih).toFixed(3);
+      if (t !== lastPat) {
+        lastPat = t;
+        rows.forEach((row, k) => { row.style.backgroundPositionX = `calc(var(--o) + ${(t * row.dataset.dir * (220 + k * 40)).toFixed(1)}px)`; });
+      }
+    }
+    if (rr && rr.bottom > 0 && rr.top < ih) {
+      const k = Math.min(frames.length - 1, Math.floor(stickyP(rr, ih) * frames.length));
+      if (k !== cur) {
+        frames[cur].classList.remove("is-on"); frames[k].classList.add("is-on");
+        ticks.forEach((t, j) => t.classList.toggle("on", j <= k));
+        reel.querySelector(".tr-n").textContent = String(k + 1).padStart(2, "0");
+        reel.querySelector(".tr-cap").textContent = frames[k].dataset.cap;
+        const sh = reel.querySelector(".tr-shutter");
+        sh.classList.remove("go"); void sh.offsetWidth; sh.classList.add("go");
+        cur = k;
+      }
+    }
+  }
+  let ticking = false;
+  const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  window.addEventListener("scroll", kick, { passive: true });
+  window.addEventListener("resize", kick);
+  update();
+  return () => { window.removeEventListener("scroll", kick); window.removeEventListener("resize", kick); };
 }
 
 /* ---------- animação do logo: "longa exposição" (seção tl-video com animacao) ----------
@@ -1037,6 +1205,36 @@ function exMedia(m, cls, eager) {
     </figure>`;
 }
 
+// pattern de curvas de nível + rota (proposta, TROCAR): um relevo (morros + ondulação) cortado em
+// níveis por marching squares — curvas de nível de verdade, que nunca se cruzam —, uma rota tracejada e
+// waypoints. Usa currentColor (a cor vem de --l-ink). Gerado uma vez e reaproveitado.
+let exTopoCache = "";
+function exTopoSvg() {
+  if (exTopoCache) return exTopoCache;
+  const W = 700, H = 600, S = 7, cols = Math.ceil(W / S), rows = Math.ceil(H / S);
+  const hills = [[170, 160, 150, 1], [480, 330, 190, 1.2], [300, 540, 130, 0.8], [640, 70, 120, 0.9], [60, 470, 110, 0.6]];
+  const h = (x, y) => hills.reduce((v, [cx, cy, r, a]) => v + a * Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * r * r)), 0)
+    + 0.08 * Math.sin(x * 0.021 + y * 0.013) + 0.06 * Math.sin(y * 0.027 - x * 0.009);
+  const g = [];
+  for (let j = 0; j <= rows; j++) { g.push([]); for (let i = 0; i <= cols; i++) g[j].push(h(i * S, j * S)); }
+  let d = "";
+  const f1 = (v) => v.toFixed(1);
+  for (let lv = 0.06; lv < 1.4; lv += 0.07) {
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      const a = g[j][i], b = g[j][i + 1], c = g[j + 1][i + 1], e = g[j + 1][i];
+      const x = i * S, y = j * S, pts = [];
+      const cut = (p, q, x1, y1, x2, y2) => { if ((p < lv) !== (q < lv)) { const t = (lv - p) / (q - p); pts.push([x1 + (x2 - x1) * t, y1 + (y2 - y1) * t]); } };
+      cut(a, b, x, y, x + S, y); cut(b, c, x + S, y, x + S, y + S); cut(c, e, x + S, y + S, x, y + S); cut(e, a, x, y + S, x, y);
+      for (let k = 0; k + 1 < pts.length; k += 2) d += `M${f1(pts[k][0])} ${f1(pts[k][1])}L${f1(pts[k + 1][0])} ${f1(pts[k + 1][1])}`;
+    }
+  }
+  const route = "M-10 560 C 80 520, 120 430, 210 420 S 300 300, 380 290 S 470 170, 560 160 S 650 60, 720 40";
+  const wps = [[210, 420], [380, 290], [560, 160]].map(([x, y], k) => `<rect x="${x - 6}" y="${y - 6}" width="12" height="12"/><text x="${x + 12}" y="${y - 10}">WP-0${k + 1}</text>`).join("");
+  exTopoCache = `<svg class="ex-topo" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <path class="ex-topo-c" d="${d}"/><path class="ex-topo-r" d="${route}"/><g class="ex-topo-w">${wps}</g></svg>`;
+  return exTopoCache;
+}
+
 const EX_LAYOUTS = {
   // abertura + ficha técnica em forma de etiqueta de equipamento
   "ex-intro": (s, p, i) => `
@@ -1127,19 +1325,72 @@ const EX_LAYOUTS = {
     </section>`;
   },
 
-  // equipamentos: grade estruturada de 4
-  "ex-gear": (s, p, i) => `
+  // equipamentos: lista de equipamento fixa ao lado; cada item aparece em tela cheia e é "marcado" ao rolar
+  "ex-gear": (s, p, i) => {
+    const m = s.midias || [];
+    return `
     <section class="ex-sec ex-gear">
       <div class="wrap">
         <div class="ex-grid">
           <div class="ex-col-text">${exLabel(s, i)}<h2 class="ex-h2 reveal">${s.titulo}</h2></div>
           <div class="ex-text ex-side reveal">${exParas(s)}</div>
         </div>
-        <div class="ex-gear-grid">${(s.midias || []).map((m, k) => exMedia(m, "ex-g" + (k + 1))).join("")}</div>
       </div>
-    </section>`,
+      <div class="ex-pack" data-ex-pack style="--n:${m.length}">
+        <div class="ex-pack-sticky">
+          ${m.map((x, k) => `<div class="ex-pack-img${k === 0 ? " is-on" : ""}">${x.img ? `<img src="${x.img}" alt="${x.legenda || ""}" loading="lazy"${x.posicao ? ` style="object-position:${x.posicao}"` : ""}>` : `<div class="ex-ph"><span>awaiting image — ${x.legenda || ""}</span></div>`}</div>`).join("")}
+          <div class="ex-pack-list">
+            <div class="ex-tag-head"><span>Packing list</span><span>${p.titulo}</span></div>
+            <ol>${m.map((x, k) => `<li${k === 0 ? ` class="is-now"` : ""}><i></i><span>ITEM ${exNum(k + 1)}</span><b>${x.legenda || ""}</b></li>`).join("")}</ol>
+          </div>
+          <p class="ex-pack-sheet" aria-hidden="true"><span>SHEET NMD-GEAR-<b>01</b></span><span>SCALE 1:1</span></p>
+        </div>
+      </div>
+    </section>`;
+  },
 
-  // em campo: imagem de ponta a ponta + duas menores
+  // versões da marca: camadas de terreno (estratos) empilhadas; a borda de cada uma é um perfil de elevação.
+  // Cada camada mostra a marca numa "condição" (cor, superfície, foto); "padrao" divide a camada em dois.
+  "ex-strata": (s, p, i) => {
+    const vs = s.versoes || [];
+    const src = { wordmark: ["assets/nomad/nomad-wordmark.svg", "908 / 147"], stamp: ["assets/nomad/nomad-stamp.svg", "1035 / 253"] };
+    // perfil de elevação determinístico (mesmo desenho a cada visita)
+    const profile = (k) => {
+      const pts = [];
+      for (let j = 0; j <= 24; j++) {
+        const x = (j / 24) * 100;
+        const y = 0.5 + 0.32 * Math.sin(j * 0.9 + k * 2.1) + 0.18 * Math.sin(j * 2.3 + k) + (j % 3 === k % 3 ? 0.12 : -0.08);
+        pts.push(`${x.toFixed(1)}% calc(var(--jag) * ${Math.min(1, Math.max(0, y)).toFixed(2)})`);
+      }
+      return `polygon(${pts.join(",")},100% 100%,0 100%)`;
+    };
+    const mark = (v) => {
+      const [u, ar] = src[v.marca] || src.wordmark;
+      return `<div class="ex-lmark reveal" style="-webkit-mask-image:url(${u});mask-image:url(${u});aspect-ratio:${ar}" role="img" aria-label="${p.titulo} — ${v.nome}"></div>`;
+    };
+    const topo = exTopoSvg();
+    return `
+    <section class="ex-sec ex-strata">
+      <div class="wrap">
+        ${exLabel(s, i)}
+        <h2 class="ex-display ex-display-sm reveal">${s.titulo}</h2>
+        <div class="ex-text ex-indent reveal">${exParas(s)}</div>
+      </div>
+      <div class="ex-layers">
+        ${vs.map((v, k) => `
+        <div class="ex-layer${v.padrao ? " is-pattern" : ""}${v.img !== undefined ? " is-photo" : ""}" style="--l-bg:${v.fundo || "#000"};--l-ink:${v.tinta};clip-path:${k ? profile(k) : "none"};z-index:${k + 1}">
+          ${v.img !== undefined ? `<div class="ex-layer-photo">${v.img ? `<img src="${v.img}" alt="${v.legenda || ""}" loading="lazy">` : `<div class="ex-ph"><span>awaiting image — ${v.legenda || ""}</span></div>`}</div>` : ""}
+          <p class="ex-layer-head"><span>LAYER ${exNum(k + 1)}</span><span>ALT ${(2840 - k * 520).toLocaleString("en-US")} M</span></p>
+          ${v.padrao ? `
+          <div class="ex-pat" style="--l-bg:${v.fundo};--l-ink:${v.tinta}">${topo}</div>
+          <div class="ex-pat" style="--l-bg:${v.tinta};--l-ink:${v.fundo}">${topo}</div>` : mark(v)}
+          <p class="ex-layer-foot"><b>${v.nome}</b><span>${v.padrao ? `${v.tinta} / ${v.fundo}` : `${v.tinta}${v.fundo ? " ON " + v.fundo : ""}`}</span></p>
+        </div>`).join("")}
+      </div>
+    </section>`;
+  },
+
+  // em campo: imagem de ponta a ponta + díptico (duas imagens dividindo a tela)
   "ex-field": (s, p, i) => {
     const m = s.midias || [];
     return `
@@ -1151,8 +1402,8 @@ const EX_LAYOUTS = {
       <div class="ex-bleed">${exMedia(m[0], "ex-full")}</div>
       <div class="wrap ex-grid">
         <div class="ex-text ex-field-text reveal">${exParas(s)}</div>
-        ${exMedia(m[1], "ex-f2")}${exMedia(m[2], "ex-f3")}
       </div>
+      <div class="ex-bleed ex-dip">${exMedia(m[1], "ex-f2")}${exMedia(m[2], "ex-f3")}</div>
     </section>`;
   },
 
@@ -1427,6 +1678,7 @@ function setupExpedition(root) {
   const labels = secs.map((s) => `${(s.querySelector(".ex-wp-id") || {}).textContent || ""} / ${((s.querySelector(".ex-wp-name") || {}).textContent || "").toUpperCase()}`);
   const fin = setupExFinal(art.querySelector("[data-ex-final]"), reduce);
   const flare = setupExFlare(art.querySelector("[data-ex-flare]"), reduce, !!map);
+  const packOff = setupExPack(art.querySelector("[data-ex-pack]"), reduce);
 
   // rota: pontos em coordenadas do artigo
   let pts = [], d = "", len = 0, wpCount = 0, restTimer = 0, client = null, idleSince = performance.now();
@@ -1599,9 +1851,35 @@ function setupExpedition(root) {
     clearTimeout(restTimer); cancelAnimationFrame(raf); io.disconnect();
     if (ro) ro.disconnect();
     if (map) map.destroy();
+    packOff();
     window.__fluidPaused = false;
     window.__exCleanup = null;
   };
+}
+
+// lista de equipamento: o item atual aparece em tela cheia e os anteriores ficam marcados
+function setupExPack(sec, reduce) {
+  if (!sec || reduce) return () => {};
+  const imgs = [...sec.querySelectorAll(".ex-pack-img")];
+  const items = [...sec.querySelectorAll(".ex-pack-list li")];
+  const num = sec.querySelector(".ex-pack-sheet b");
+  let cur = 0, ticking = false;
+  const update = () => {
+    ticking = false;
+    const ih = window.innerHeight, r = sec.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > ih) return;
+    const k = Math.min(imgs.length - 1, Math.floor(stickyP(r, ih) * imgs.length));
+    if (k === cur) return;
+    imgs.forEach((el, j) => { el.classList.toggle("is-on", j === k); el.classList.toggle("is-past", j === k - 1); });   // só a anterior fica atrás (menos camadas para pintar)
+    items.forEach((el, j) => { el.classList.toggle("is-now", j === k); el.classList.toggle("is-done", j < k); });
+    num.textContent = exNum(k + 1);
+    cur = k;
+  };
+  const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  window.addEventListener("scroll", kick, { passive: true });
+  window.addEventListener("resize", kick);
+  update();
+  return () => { window.removeEventListener("scroll", kick); window.removeEventListener("resize", kick); };
 }
 
 // sinalizador: devolve centro e raio do círculo laranja (px de CSS da tela) para o mapa e recorta o conteúdo
@@ -1912,9 +2190,11 @@ function vgMedia(m, cls) {
   if (m.video) inner = `<video src="${m.video}"${m.poster ? ` poster="${m.poster}"` : ""} muted loop playsinline preload="metadata" data-autoplay></video>`;
   else if (m.img) inner = `<img src="${m.img}" alt="${m.legenda || ""}" loading="lazy"${m.posicao ? ` style="object-position:${m.posicao}"` : ""}>`;
   else inner = `<span class="vg-ph"><span>Awaiting image</span><span>${m.legenda || ""}</span></span>`;
+  // anel de atenção: chega a um detalhe da imagem ANTES dela aparecer (foco = [x%, y%])
+  const ring = m.foco ? `<span class="vg-watch" style="left:${m.foco[0]}%;top:${m.foco[1]}%" aria-hidden="true"><i></i>${m.nota ? `<em>${m.nota}</em>` : ""}</span>` : "";
   return `
     <figure class="vg-fig vg-g vg-g-box ${cls || ""}">
-      <div class="vg-frame" style="aspect-ratio:${m.proporcao || "3/2"}">${inner}</div>
+      <div class="vg-frame" style="aspect-ratio:${m.proporcao || "3/2"}">${inner}${ring}</div>
       ${m.legenda && (m.img || m.video) ? `<figcaption>${m.legenda}</figcaption>` : ""}
     </figure>`;
 }
@@ -1971,6 +2251,7 @@ const VG_LAYOUTS = {
     </section>`;
   },
 
+  // símbolo: a marca principal ocupa a tela inteira; construção e tamanhos pequenos dividem a tela em dois
   "vg-symbol": (s, p, i, n) => {
     const m = s.midias || [];
     return `
@@ -1979,11 +2260,9 @@ const VG_LAYOUTS = {
         ${vgLabel(s, i, n)}
         ${vgTitle(s)}
         ${vgText(s, "vg-indent")}
-        <div class="vg-grid vg-symbol-grid">
-          ${vgMedia(m[0], "vg-sym-main")}
-          <div class="vg-sym-side">${m.slice(1).map((x) => vgMedia(x)).join("")}</div>
-        </div>
       </div>
+      ${vgMedia(m[0], "vg-full")}
+      ${m.length > 1 ? `<div class="vg-dip">${m.slice(1, 3).map((x) => vgMedia(x)).join("")}</div>` : ""}
     </section>`;
   },
 
@@ -2030,15 +2309,45 @@ const VG_LAYOUTS = {
     </section>`;
   },
 
+  // aplicações: imagens de ponta a ponta; o anel de atenção chega antes, a um detalhe de cada uma
   "vg-applications": (s, p, i, n) => {
-    const m = s.midias || [];
+    const m = (s.midias || []).map((x, k) => ({ foco: [[68, 38], [36, 58], [62, 44]][k % 3], ...x }));
     return `
     <section class="vg-sec vg-applications">
       <div class="wrap">
         ${vgLabel(s, i, n)}
         ${vgTitle(s)}
         ${vgText(s, "vg-indent")}
-        <div class="vg-grid vg-app-grid">${m.map((x, k) => vgMedia(x, k === 0 ? "vg-app-main" : "vg-app-half")).join("")}</div>
+      </div>
+      ${vgMedia(m[0], "vg-full vg-full-wide")}
+      ${m.length > 1 ? `<div class="vg-dip vg-dip-tall">${m.slice(1).map((x) => vgMedia(x)).join("")}</div>` : ""}
+    </section>`;
+  },
+
+  // versões da marca: a vigília atravessa a noite. O fundo vai do papel à tinta conforme a rolagem,
+  // o campo continua respirando (e é o pattern da marca); no fim, o único momento do acento.
+  "vg-versions": (s, p, i, n) => {
+    const vs = s.versoes || [];
+    const mark = s.marca
+      ? `<img class="vv-logo" src="${s.marca}" alt="${p.titulo}">`
+      : `<span class="vv-sym" aria-hidden="true"><span>Symbol</span></span><span class="vv-word">${p.titulo}</span>`;
+    return `
+    <section class="vg-sec vg-versions-sec">
+      <div class="wrap">
+        ${vgLabel(s, i, n)}
+        ${vgTitle(s)}
+        ${vgText(s, "vg-indent")}
+      </div>
+      <div class="vg-versions" data-vg-versions data-v='${JSON.stringify(vs).replace(/'/g, "&#39;")}' style="--n:${vs.length}">
+        <div class="vv-sticky">
+          <canvas class="vg-field vv-field" aria-hidden="true"></canvas>
+          <div class="vv-lockup">${mark}</div>
+          <p class="vv-clock" aria-hidden="true"><span>Watch</span><b>${(vs[0] || {}).hora || ""}</b></p>
+          <div class="vv-foot">
+            <p class="vv-name"><span>V—01</span><b>${(vs[0] || {}).nome || ""}</b></p>
+            <ol class="vv-steps" aria-label="Versions">${vs.map((v, k) => `<li${k === 0 ? ` class="on"` : ""}><i style="background:${v.fundo}"></i><i style="background:${v.tinta}"></i><span>${v.nome}</span></li>`).join("")}</ol>
+          </div>
+        </div>
       </div>
     </section>`;
   },
@@ -2141,13 +2450,13 @@ function vgField(canvas) {
       }
     }
     ctx.globalAlpha = 0.34 * (1 - 0.55 * (st.dim || 0));
-    ctx.fillStyle = INK; ctx.fill();
+    ctx.fillStyle = F.INK; ctx.fill();
     // o ponto fora do ritmo: treme de leve e ganha o acento
     if (an) {
       const x = ap.x + an.d * 2.2 * Math.sin(t * 6.3), y = ap.y + an.d * 1.6 * Math.cos(t * 4.7);
       const r = R * (0.42 + 0.58 * sAn) * (1 + 0.5 * an.d);
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.globalAlpha = 0.34 * (1 - an.d); ctx.fillStyle = INK; ctx.fill();
+      ctx.globalAlpha = 0.34 * (1 - an.d); ctx.fillStyle = F.INK; ctx.fill();
       ctx.globalAlpha = an.d; ctx.fillStyle = ACC; ctx.fill();
     }
     // o centro "abre" para o texto final
@@ -2161,7 +2470,7 @@ function vgField(canvas) {
     if (rg && rg.a > 0.005 && rg.k > 0.005) {
       ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * rg.k);
       ctx.lineWidth = 1;
-      ctx.globalAlpha = rg.a * (1 - (rg.acc || 0)) * 0.75; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.globalAlpha = rg.a * (1 - (rg.acc || 0)) * 0.75; ctx.strokeStyle = F.INK; ctx.stroke();
       if (rg.acc > 0.005) { ctx.globalAlpha = rg.a * rg.acc; ctx.strokeStyle = ACC; ctx.stroke(); }
     }
     ctx.globalAlpha = 1;
@@ -2190,6 +2499,80 @@ function vgLoop(el, fn) {
 }
 const vgEase = (cur, target, dt, tau) => cur + (target - cur) * (1 - Math.exp(-dt / tau));
 const vgSeg = (p, a, b) => { const t = Math.min(1, Math.max(0, (p - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// ---------- versões: a vigília atravessa a noite ----------
+const vgHex = (h) => { const n = parseInt(h.replace("#", ""), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const vgMix = (a, b, t) => { const x = vgHex(a), y = vgHex(b); return `rgb(${x.map((c, k) => Math.round(c + (y[k] - c) * t)).join(",")})`; };
+const vgMin = (h) => { const [a, b] = (h || "0:0").split(":").map(Number); return a * 60 + b; };
+function vgVersions(sec, reduce) {
+  if (!sec) return null;
+  const vs = JSON.parse(sec.dataset.v || "[]");
+  if (!vs.length) return null;
+  const stage = sec.querySelector(".vv-sticky");
+  const canvas = sec.querySelector(".vv-field");
+  const F = vgField(canvas);
+  const clock = sec.querySelector(".vv-clock b");
+  const name = sec.querySelector(".vv-name");
+  const steps = [...sec.querySelectorAll(".vv-steps li")];
+  const sigK = vs.findIndex((v) => v.sinal);
+  const headerBg = document.documentElement.style.getPropertyValue("--header-bg");
+  // fundo da noite (a versão mais escura) para o header enquanto o palco está escuro
+  const nightBg = vs.reduce((a, v) => (vgHex(v.fundo).reduce((x, y) => x + y) < vgHex(a).reduce((x, y) => x + y) ? v.fundo : a), vs[0].fundo);
+  // horas da vigília: o relógio corre entre as horas de cada versão (passa da meia-noite)
+  const mins = []; vs.forEach((v, k) => { let m = vgMin(v.hora); if (k && m < mins[k - 1]) m += 1440; mins.push(m); });
+  let u = reduce ? vs.length - 1 : 0, k0 = -1, an = null, sig = 0, last = 0, covering = false, wasDark = false;
+  const apply = () => {
+    const k = Math.min(vs.length - 1, Math.floor(u)), t = smooth01((u - k - 0.35) / 0.5), nx = vs[Math.min(vs.length - 1, k + 1)];
+    const bg = vgMix(vs[k].fundo, nx.fundo, t), ink = vgMix(vs[k].tinta, nx.tinta, t);
+    stage.style.setProperty("--vv-bg", bg); stage.style.setProperty("--vv-ink", ink);
+    if (F) F.INK = ink;
+    // header: volta ao tema escuro enquanto o palco noturno cobre o topo da tela
+    const lum = (h) => { const [r, g, b] = vgHex(h); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+    const dark = covering && lum(vs[k].fundo) * (1 - t) + lum(nx.fundo) * t < 0.45;
+    if (dark !== wasDark) {
+      wasDark = dark;
+      const root = document.documentElement;
+      if (dark) { root.removeAttribute("data-header-theme"); root.style.setProperty("--header-bg", `color-mix(in srgb, ${nightBg} 92%, transparent)`); }
+      else { root.setAttribute("data-header-theme", "light"); root.style.setProperty("--header-bg", headerBg); }
+    }
+    const kk = t > 0.5 ? Math.min(vs.length - 1, k + 1) : k;
+    if (kk !== k0) {
+      k0 = kk;
+      name.innerHTML = `<span>V—${vgNum(kk + 1)}</span><b>${vs[kk].nome}</b>`;
+      steps.forEach((el, j) => el.classList.toggle("on", j === kk));
+      sec.classList.toggle("is-signal", kk === sigK);
+    }
+    const m = mins[k] + (mins[Math.min(vs.length - 1, k + 1)] - mins[k]) * Math.min(1, Math.max(0, u - k));
+    const hh = Math.floor(m / 60) % 24, mm = Math.floor(m % 60);
+    clock.textContent = `${vgNum(hh)}:${vgNum(mm)}`;
+  };
+  const measure = () => {
+    const r = sec.getBoundingClientRect();
+    covering = r.top <= 40 && r.bottom >= 80;
+    if (!reduce) u = stickyP(r, window.innerHeight) * (vs.length - 1);
+  };
+  if (F) F.size();
+  const draw = (time, dt) => {
+    if (!F) return;
+    // o sinal: um ponto à direita da marca perde o ritmo, o anel chega antes; só na versão "sinal"
+    const target = k0 === sigK ? 1 : 0;
+    sig = vgEase(sig, target, dt || 0.016, 0.5);
+    if (!an) an = F.nearest(F.W * 0.78, F.H * 0.3);
+    const p = F.dot(an.i, an.j);
+    F.draw(reduce ? 0 : time, {
+      an: { i: an.i, j: an.j, d: sig },
+      ring: { x: p.x, y: p.y, r: 22, k: Math.min(1, sig * 1.4), a: sig, acc: sig }
+    });
+  };
+  const ro = new ResizeObserver(() => { if (F) { F.size(); an = null; draw(last, 0); } });
+  ro.observe(canvas);
+  let ticking = false;
+  const kick = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; measure(); apply(); }); } };
+  window.addEventListener("scroll", kick, { passive: true });
+  measure(); apply();
+  const stop = reduce ? (draw(0, 1), null) : vgLoop(stage, (time, dt) => { last = time; draw(time, dt); });
+  return () => { window.removeEventListener("scroll", kick); ro.disconnect(); if (stop) stop(); document.documentElement.style.setProperty("--header-bg", headerBg); };
+}
 
 // ---------- hero: o anel passeia pelo campo; no desktop, vai para onde o cursor VAI estar ----------
 function vgHero(sec, reduce) {
@@ -2378,6 +2761,7 @@ function setupVigil(root) {
   }
 
   offs.push(vgHero(art.querySelector(".vg-hero"), reduce));
+  offs.push(vgVersions(art.querySelector("[data-vg-versions]"), reduce));
   const fin = vgFinal(art.querySelector("[data-vg-final]"), reduce);
   if (fin) {
     offs.push(fin.destroy);

@@ -27,6 +27,8 @@
 ### Regra de ouro dos cases
 **Cada case tem uma linguagem visual própria, derivada do conceito da marca**, e não repete o layout nem os efeitos de outro case (molduras, trilhas, transições). Antes de propor algo, conferir se já existe algo parecido nos outros.
 
+**Imagens grandes, nunca grades de quadradinhos** (pedido do Davi, out/2026: "quadrados pequenos desvalorizam demais"). Usar tela cheia, imagens sangradas, dípticos 50/50 de ponta a ponta. Evitar o ritmo repetido "texto → grade de imagens → texto → grade". **Todo case de branding tem uma seção de versões da marca** (cores, versões, pattern), com formato próprio do case.
+
 ---
 
 ## 2. Estrutura técnica
@@ -49,7 +51,7 @@ js/project-page.js  Monta os cases: editorial (Lynda), timeline (Wilker), expedi
 js/fluid.js         Fundo em fluido WebGL2. CONFIG no topo. Pausa com window.__fluidPaused = true
 assets/lynda/       Imagens da Lynda (otimizadas)
 assets/fonts/       Sylvena-Regular.woff2
-assets/nomad/       nomad-stamp.svg e nomad-wordmark.svg (a marca em vetor; não são usados pelo site)
+assets/nomad/       nomad-stamp.svg e nomad-wordmark.svg (a marca em vetor; usados como máscara em Brand Versions)
 tools/              Scripts que geraram vetores (ver seção 6). Não fazem parte do site.
 ```
 
@@ -105,7 +107,8 @@ Seções, em ordem (`secoes` no `projects.js`):
 **Fontes:** Fraunces + Work Sans. **Vermelho do REC `#E0352B`: DECIDIDO, é da marca** (manter).
 **Imagens:** em `assets/wilker/` (capa = topo do case; card da home = `wilker-card.jpg`, camisa bordada; Concept: álbum + tela; Symbol: construção + detalhe). `wilker-logo.svg` = logo original em vetor, convertido em `VETORES.wilker` (simbolo, ponto, nome, descritor).
 **Animação do logo "longa exposição"** (seção Motion, `animacao: "longa-exposicao"`; `tlTakeHtml`/`tlTake` em `project-page.js`): light painting — um ponto de luz percorre o W, devagar onde o traço é grosso (a espessura = luz acumulada); no fim sobe e vira o dot vermelho (REC); obturador (corte preto); o vetor nítido aparece e o nome entra com ajuste de foco (blur → nítido). HUD: STBY → BULB/EXP → REC → SAVED · TAKE 01. Linha central calculada em tempo real: `tlFlatten` lê o path (não usar `getPointAtLength`: 675 ms) e um alinhamento DTW pareia os dois lados do contorno (pareamento por janela falhava nas curvas de baixo). Toca ao aparecer, com Replay.
-**Pendente:** 6 mockups de Applications com nomes reais; HEX oficiais (usei `#000000`/`#FFFFFF`); ano.
+**Versões / pattern / aplicações (out/2026):** `tl-versions` = palco sticky; a agulha (linha + ponto REC) varre a tela e revela a próxima versão (negativo → positivo → uma cor → símbolo), desenhada ao vivo de `VETORES.wilker` (recortes de viewBox medidos: completo `120 400 805 300`, símbolo `380 404 294 160`). `tl-pattern` = proposta minha (W repetido como longa exposição, faixas correndo em sentidos opostos; tile SVG em data-URI com aspas simples). Applications = `tl-reel` (projetor: uma aplicação por tela, corte de obturador, contador FRAME; `dupla` divide a tela). Concept virou díptico sangrado 64/36; Symbol virou pilha de imagens em tela cheia (sticky). Versões e textos dessas seções são rascunho (TROCAR). JS em `tlScenes`.
+**Pendente:** 6 mockups de Applications com nomes reais; HEX oficiais (usei `#000000`/`#FFFFFF`); ano; confirmar quais versões da marca existem.
 Frases interpretadas por mim (marcar se ele perguntar): "moments taken out of time — and kept"; "stops being just seen and starts being kept"; "keeping the attention on the mark and on Wilker's images".
 Sugestão feita e ainda não pedida: uma "folha de contato" com as fotos dele (sequência numerada, marcações a lápis de cera).
 
@@ -125,7 +128,9 @@ Como funciona (tudo em `project-page.js`, bloco "CASE EXPEDIÇÃO"):
 - **Cena final** (`ex-final`, 470vh): registro de campo + painel. Cada frase muda algo: rota real se desvia da planejada; clima vira; **"terrain may become harder" = varredura laranja que refaz o mapa** com terreno acidentado, sombreamento e picos laranja, que fica "vivo"; destino se afasta (2.4 → 18.7 km); "NOMAD is built for that." + **carimbo NOMAD** (filtro SVG `#ex-rough` aplicado só na borda/palavra; texto pequeno fica nítido).
 - Coordenadas, altitudes, distâncias e códigos `NMD-...` são **decorativos**.
 
-**Pendente:** todas as imagens (espaços com legenda indicando o conteúdo); cores oficiais; ano; papel dele no projeto; códigos reais do Expedition System.
+- **Brand Versions** (`ex-strata`, out/2026): camadas de terreno empilhadas, a borda de cada uma é um perfil de elevação (clip-path); a marca em cada "condição" via CSS `mask-image` dos SVGs em `assets/nomad/` (então os SVGs agora SÃO usados pelo site); a última camada é o pattern (curvas de nível por marching squares + rota, `exTopoSvg`, proposta minha, TROCAR) em duas cores.
+- **Field Equipment** (`ex-gear`): virou lista de equipamento (etiqueta à direita, longe do HUD) + item atual em tela cheia (`setupExPack`). Só a imagem atual e a anterior ficam pintadas (desempenho). In the Field: as 2 imagens menores viraram díptico.
+**Pendente:** todas as imagens (espaços com legenda indicando o conteúdo); cores oficiais; ano; papel dele no projeto; códigos reais do Expedition System; confirmar versões da marca.
 
 ### VIGIL — software de infraestrutura preditiva (família **vigília**, publicado, imagens pendentes)
 **Briefing do Davi:** "Predictive infrastructure intelligence." / "Software that predicts infrastructure failures before they happen". **Em aberto (não assumir):** se é cliente real e que tipo de infraestrutura. Por isso o case é **abstrato** (linhas, faixas, ruído; nada de servidores ou tubulações).
@@ -144,7 +149,9 @@ Como funciona (bloco "CASE VIGÍLIA" em `project-page.js`, CSS "CASE VIGÍLIA"):
 - **Header claro** só nesse case: atributo `data-header-theme="light"` no `<html>` (posto em `setupVigil`, retirado no `__vgCleanup`).
 - `prefers-reduced-motion`: sem fantasma (tudo confirmado), campo parado, sem régua, cena final estática com o fecho visível.
 - Armadilha: gradiente de canvas para `"transparent"`/`rgba(0,0,0,0)` cria auréola cinza; usar a mesma cor com alfa 0 (`PAPER0`).
-**Pendente:** imagens (Concept, 3 do símbolo, 3 de aplicações), textos reais, ficha técnica, cores e fontes oficiais, ano.
+- **Versions** (`vg-versions`, out/2026): "a vigília atravessa a noite" — palco sticky; o fundo vai do papel à tinta com a rolagem (uma versão por "hora", relógio decorativo), o campo respira atrás (= pattern), a última versão é o sinal (ponto fora do ritmo + anel no acento). Sem logo ainda: palavra VIGIL provisória + espaço "Symbol" (campo `marca` vazio). `vgField` agora lê `F.INK` a cada quadro (a cena troca a cor). O header volta ao tema escuro (e `--header-bg` escuro) enquanto o palco noturno cobre o topo.
+- The Symbol: 1ª imagem em tela cheia + díptico 50/50. Applications: 1ª de ponta a ponta + díptico; o **anel de atenção** (`foco`, `nota` opcionais) pousa num detalhe ainda no "fantasma", antes da imagem confirmar.
+**Pendente:** imagens (Concept, 3 do símbolo, 3 de aplicações), textos reais, ficha técnica, cores e fontes oficiais, ano, logo (para `marca` nas versões).
 
 ---
 

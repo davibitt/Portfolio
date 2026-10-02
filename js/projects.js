@@ -47,6 +47,10 @@
                  "reflexao"    fechamento tipográfico
     estilo    -> (opcional) família de case com linguagem própria: "timeline" (Wilker), "expedicao" (NOMAD),
                  "vigilia" (VIGIL). Cada família tem seus próprios layouts (tl-*, ex-*, vg-*) em project-page.js.
+                 Seções de VERSÕES DA MARCA (cores, versões, pattern), uma por família, cada uma com linguagem própria:
+                   "tl-versions" + "tl-pattern" (Wilker), "ex-strata" (NOMAD), "vg-versions" (VIGIL).
+                 Imagens grandes: "tl-reel" (projetor em tela cheia; item com "dupla" divide a tela),
+                   "ex-gear" (lista de equipamento + item em tela cheia), dípticos de ponta a ponta nos três cases.
     simbolo   -> (opcional) o "d" do path do símbolo, exportado do Illustrator em prancheta 1080x1080.
                  Usado na transição do layout "fecho".
     logoVetor -> (opcional) nome do logo vetorizado em VETORES (fim deste arquivo), usado pelos layouts
@@ -300,6 +304,32 @@ const TODOS_PROJETOS = [
         ]
       },
       {
+        // versões da marca: a agulha (linha + ponto REC) varre a tela e revela uma versão por vez.
+        // TROCAR: confirmar quais versões existem. "mostra": "completo" (símbolo + nome) ou "simbolo".
+        // "ponto" = cor do ponto REC naquela versão.
+        layout: "tl-versions", nome: "Versions",
+        titulo: "Negative, positive.",   // TROCAR: título (rascunho meu)
+        textos: [
+          "Like an image before and after it is developed, the identity works in negative and in positive — and the symbol holds on its own."   // TROCAR: rascunho meu
+        ],
+        versoes: [
+          { nome: "Primary — negative", fundo: "#000000", tinta: "#FFFFFF", ponto: "#E0352B", mostra: "completo" },
+          { nome: "Primary — positive", fundo: "#FFFFFF", tinta: "#000000", ponto: "#E0352B", mostra: "completo" },
+          { nome: "One colour", fundo: "#F2F1EE", tinta: "#0B0B0B", mostra: "completo" },
+          { nome: "Symbol", fundo: "#0B0B0B", tinta: "#F2F1EE", ponto: "#E0352B", mostra: "simbolo" }
+        ]
+      },
+      {
+        // pattern feito do símbolo (proposta minha, não faz parte da marca entregue): o W repetido como
+        // numa longa exposição, cada faixa correndo num sentido com a rolagem. TROCAR se a marca tiver um pattern próprio.
+        layout: "tl-pattern", nome: "Pattern",
+        titulo: "Every take, one line.",   // TROCAR: rascunho meu
+        textos: [
+          "The symbol repeated like a long exposure — each take fading into the next, until one of them is recorded."   // TROCAR: rascunho meu
+        ],
+        legenda: "Pattern study — the symbol as a long exposure"
+      },
+      {
         layout: "tl-video", nome: "Motion",
         titulo: "The mark in motion.",
         textos: [
@@ -311,19 +341,19 @@ const TODOS_PROJETOS = [
         midias: [ { legenda: "Logo animation — long exposure", proporcao: "16/9" } ]
       },
       {
-        layout: "tl-scatter", nome: "Applications",
+        // projetor: cada aplicação em tela cheia, trocada com um corte de obturador ao rolar.
+        // Um item com "dupla" divide a tela entre duas imagens. Troque "Application 01" etc. pelo nome da peça.
+        layout: "tl-reel", nome: "Applications",
         titulo: "Frames of the identity.",
         textos: [
           "The identity in use — across the pieces that carry Wilker's work."
         ],
-        // aplicações: até 6 posições no grid. Troque "Application 01" etc. pelo nome da peça (ex: "Business cards")
         midias: [
-          { legenda: "Application 01", proporcao: "4/3" },
-          { legenda: "Application 02", proporcao: "3/4" },
-          { legenda: "Application 03", proporcao: "1/1" },
-          { legenda: "Application 04", proporcao: "16/10" },
-          { legenda: "Application 05", proporcao: "21/9" },
-          { legenda: "Application 06", proporcao: "4/5" }
+          { legenda: "Application 01" },
+          { legenda: "Application 02" },
+          { dupla: [ { legenda: "Application 03" }, { legenda: "Application 04" } ] },
+          { legenda: "Application 05" },
+          { legenda: "Application 06" }
         ]
       }
     ]
@@ -403,6 +433,24 @@ const TODOS_PROJETOS = [
         ]
       },
       {
+        // versões da marca: camadas de terreno empilhadas, cada uma com a marca numa "condição".
+        // "marca": "wordmark" ou "stamp" (arquivos em assets/nomad/). "img": foto atrás da marca ("" = espaço reservado).
+        // "padrao": true = camada dividida em duas com o pattern de curvas de nível (proposta minha, TROCAR).
+        // TROCAR: confirmar versões e cores oficiais.
+        layout: "ex-strata", nome: "Brand Versions",
+        titulo: "Any surface. Any condition.",   // TROCAR: rascunho meu
+        textos: [
+          "The wordmark holds on graphite, on orange, on raw surfaces and over the landscape — the same mark, whatever the conditions."   // TROCAR: rascunho meu
+        ],
+        versoes: [
+          { nome: "Orange on graphite", fundo: "#1E2023", tinta: "#FF5B1F", marca: "wordmark" },
+          { nome: "Graphite on orange", fundo: "#FF5B1F", tinta: "#1E2023", marca: "wordmark" },
+          { nome: "Stamp — graphite on bone", fundo: "#E9E5DC", tinta: "#1E2023", marca: "stamp" },
+          { nome: "Bone over landscape", tinta: "#E9E5DC", marca: "wordmark", img: "", legenda: "Field photography behind the wordmark" },
+          { nome: "Pattern — contours & route", fundo: "#1E2023", tinta: "#FF5B1F", padrao: true }
+        ]
+      },
+      {
         // sinalizador: o laranja se expande a partir de um ponto e toma a tela; "principios" vira a fita de marcação
         layout: "ex-flare", nome: "Built for the Unknown",
         pre: "NOMAD's identity is not designed simply to look adventurous.",
@@ -431,6 +479,7 @@ const TODOS_PROJETOS = [
         ]
       },
       {
+        // lista de equipamento: cada item aparece em tela cheia ao rolar e é marcado na lista
         layout: "ex-gear", nome: "Field Equipment",
         titulo: "Unmistakably NOMAD.",
         textos: [
@@ -525,7 +574,8 @@ const TODOS_PROJETOS = [
         ]
       },
       {
-        // o símbolo é decisão do design, não da página: só espaços reservados
+        // o símbolo é decisão do design, não da página: só espaços reservados.
+        // a 1ª imagem ocupa a tela inteira; a 2ª e a 3ª dividem a tela ao meio
         layout: "vg-symbol", nome: "The Symbol",
         titulo: "",   // TROCAR: título da seção (opcional)
         textos: [],   // TROCAR: texto sobre o símbolo
@@ -564,9 +614,29 @@ const TODOS_PROJETOS = [
         ]
       },
       {
+        // versões da marca: a vigília atravessa a noite. Ao rolar, o fundo vai do papel à tinta (uma versão por
+        // "hora"); o campo de pontos continua respirando atrás (é o pattern da marca); a última versão é o sinal.
+        // "marca": caminho do logo (svg/png). Vazio = palavra VIGIL provisória + espaço do símbolo.
+        // TROCAR: versões, cores e horas (as horas são decorativas).
+        layout: "vg-versions", nome: "Versions",
+        titulo: "The same calm, day or night.",   // TROCAR: rascunho meu
+        textos: [
+          "The identity keeps watch through the whole night: light on paper, quiet on mist, inverted on ink — and the accent only when something is seen."   // TROCAR: rascunho meu
+        ],
+        marca: "",   // TROCAR: logo
+        versoes: [
+          { nome: "Ink on paper", hora: "18:40", fundo: "#F3F1EA", tinta: "#15191C" },
+          { nome: "Ink on mist", hora: "21:15", fundo: "#D9D7CF", tinta: "#15191C" },
+          { nome: "Paper on ink", hora: "02:30", fundo: "#15191C", tinta: "#F3F1EA" },
+          { nome: "Signal", hora: "04:52", fundo: "#15191C", tinta: "#F3F1EA", sinal: true }
+        ]
+      },
+      {
         layout: "vg-applications", nome: "Applications",
         titulo: "Screens, reports, stationery.",   // TROCAR: depende do tipo de infraestrutura
         textos: [],   // TROCAR
+        // a 1ª de ponta a ponta; as outras dividem a tela. "foco": [x%, y%] = onde o anel de atenção pousa
+        // antes da imagem aparecer (opcional; tem um padrão). "nota": texto curto ao lado do anel (opcional)
         midias: [
           { legenda: "Screens — monitoring", proporcao: "16/10" },
           { legenda: "Reports", proporcao: "4/5" },
